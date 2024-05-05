@@ -1,0 +1,2 @@
+kubernetes_version: '1.30.0'
+cni_version: '1.4.1'

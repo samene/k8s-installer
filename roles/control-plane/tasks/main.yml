@@ -1,0 +1,175 @@
+- set_fact:
+    arch: "{{ architecture[ansible_architecture|lower] }}"
+
+- name: Create folders
+  ansible.builtin.file:
+    path: "{{item}}"
+    state: directory
+    mode: '0700'
+    owner: root
+    group: root
+  loop:
+    - "{{ ansible_env.HOME }}/.kube"
+    
+- name: Download control plane release
+  ansible.builtin.get_url:
+    url: "{{ download_url }}/v{{ kubernetes_version }}/kubernetes-server-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+    dest: "/tmp/kubernetes-server-v{{ kubernetes_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+    force: false
+    mode: '0755'
+
+- name: Untar control plane release
+  ansible.builtin.unarchive:
+    src: "/tmp/kubernetes-server-v{{ kubernetes_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+    dest: "/tmp"
+    remote_src: true
+
+- name: Move control plane binaries
+  ansible.builtin.copy:
+    src: "/tmp/kubernetes/server/bin/{{item}}"
+    dest: "/usr/local/bin/{{item}}"
+    mode: '0755'
+    remote_src: true
+  loop:
+    - kube-apiserver
+    - kube-controller-manager
+    - kube-scheduler
+    - kubectl
+
+- name: Create control plane component keys
+  ansible.builtin.shell: "openssl genrsa -out {{item.name}}.key 2048"
+  args:
+    chdir: /var/lib/kubernetes
+    creates: /var/lib/kubernetes/{{item.name}}.key
+  loop:
+    - {name: kube-api}
+    - {name: kube-controller-manager}
+    - {name: kube-scheduler}
+    - {name: front-proxy-client}
+    - {name: service-account}
+    - {name: admin}
+
+- name: Create kube-apiserver CSR config
+  ansible.builtin.template:
+    src: kube-api.cnf.j2
+    dest: /tmp/kube-api.cnf
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: Create kube-apiserver CSR
+  ansible.builtin.shell: "openssl req -new -key /var/lib/kubernetes/kube-api.key -subj \"/CN=kube-apiserver\" -out kube-api.csr -config kube-api.cnf"
+  args:
+    chdir: /tmp
+
+- name: Create controlplane certificate csr
+  ansible.builtin.shell: "openssl req -new -key /var/lib/kubernetes/{{item.name}}.key -subj \"{{item.subject}}\" -out {{item.name}}.csr"
+  args:
+    chdir: /tmp
+  loop:
+    - {name: kube-controller-manager, subject: '/CN=system:kube-controller-manager'}
+    - {name: kube-scheduler, subject: '/CN=system:kube-scheduler'}
+    - {name: service-account, subject: '/CN=service-accounts'}
+    - {name: front-proxy-client, subject: '/CN=front-proxy-client'}
+    - {name: admin, subject: '/CN=admin/O=system:masters'}
+
+- name: Create kube-apiserver certificate
+  ansible.builtin.shell: "openssl x509 -req -in kube-api.csr -CA /var/lib/kubernetes/ca.crt -CAkey /var/lib/kubernetes/ca.key -CAcreateserial -out /var/lib/kubernetes/kube-api.crt -extensions v3_req -extfile kube-api.cnf -days 365"
+  args:
+    chdir: /tmp
+
+- name: Create controlplane certificates
+  ansible.builtin.shell: "openssl x509 -req -in {{item.name}}.csr -CA /var/lib/kubernetes/ca.crt -CAkey /var/lib/kubernetes/ca.key -CAcreateserial -out /var/lib/kubernetes/{{item.name}}.crt -extensions v3_req -days 365"
+  args:
+    chdir: /tmp
+  loop:
+    - {name: kube-controller-manager}
+    - {name: kube-scheduler}
+    - {name: service-account}
+    - {name: front-proxy-client}
+    - {name: admin}
+
+- name: Generate etcd encryption key
+  ansible.builtin.shell: "head -c 32 /dev/urandom | base64"
+  register: etcd_encryption_key
+  no_log: true
+
+- name: Create etcd encryption config
+  ansible.builtin.template:
+    src: encryption-config.yaml.j2
+    dest: /var/lib/kubernetes/encryption-at-rest.yaml
+    mode: '0644'
+    owner: root
+    group: root
+    force: false
+
+- name: Generate Kubeconfigs (1/4)
+  ansible.builtin.shell: "kubectl config set-cluster kubernetes --certificate-authority=/var/lib/kubernetes/ca.crt --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig=/var/lib/kubernetes/{{item}}.kubeconfig"
+  loop:
+    - kube-controller-manager
+    - kube-scheduler
+    - admin
+
+- name: Generate Kubeconfigs (2/4)
+  ansible.builtin.shell: "kubectl config set-credentials {{item.group}} --client-certificate=/var/lib/kubernetes/{{item.name}}.crt --client-key=/var/lib/kubernetes/{{item.name}}.key --embed-certs=true --kubeconfig=/var/lib/kubernetes/{{item.name}}.kubeconfig"
+  loop:
+    - {name: kube-controller-manager, group: system:kube-controller-manager}
+    - {name: kube-scheduler, group: system:kube-scheduler}
+    - {name: admin, group: admin}
+
+- name: Generate Kubeconfigs (3/4)
+  ansible.builtin.shell: "kubectl config set-context default --cluster=kubernetes --user={{item.group}} --kubeconfig=/var/lib/kubernetes/{{item.name}}.kubeconfig"
+  loop:
+    - {name: kube-controller-manager, group: system:kube-controller-manager}
+    - {name: kube-scheduler, group: system:kube-scheduler}
+    - {name: admin, group: admin}
+
+- name: Generate Kubeconfigs (4/4)
+  ansible.builtin.shell: "kubectl config use-context default --kubeconfig=/var/lib/kubernetes/{{item}}.kubeconfig"
+  loop:
+    - kube-controller-manager
+    - kube-scheduler
+    - admin
+
+- name: Move admin kubeconfig
+  ansible.builtin.copy:
+    src: /var/lib/kubernetes/admin.kubeconfig
+    dest: "{{ansible_env.HOME}}/.kube/config"
+    mode: '0644'
+    remote_src: true
+
+- name: Create systemd unit file
+  ansible.builtin.template:
+    src: "{{item}}.service.j2"
+    dest: /etc/systemd/system/{{item}}.service
+    mode: '0644'
+    owner: root
+    group: root
+  loop:
+    - kube-apiserver
+    - kube-controller-manager
+    - kube-scheduler
+  register: cp_systemd
+
+- name: Reload & start service
+  ansible.builtin.service:
+    name: "{{item}}"
+    enabled: true
+    state: reloaded
+  loop:
+    - kube-apiserver
+    - kube-controller-manager
+    - kube-scheduler
+  when: cp_systemd.changed
+  ignore_errors: true
+
+- name: Restart service
+  ansible.builtin.service:
+    name: "{{item}}"
+    enabled: true
+    state: restarted
+  loop:
+    - kube-apiserver
+    - kube-controller-manager
+    - kube-scheduler
+

@@ -1,0 +1,21 @@
+- name: common
+  hosts: all
+  roles:
+    - common
+
+- name: Create etcd cluster
+  hosts: etcd
+  roles:
+    - etcd
+
+- name: Control plane components
+  hosts: control-plane
+  tags:
+    - control-plane
+  roles:
+    - control-plane
+
+- name: Worker node components
+  hosts: worker
+  roles:
+    - worker    

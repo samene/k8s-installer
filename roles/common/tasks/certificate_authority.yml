@@ -1,0 +1,48 @@
+  
+- name: Create folders
+  ansible.builtin.file:
+    path: "{{item}}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  loop:
+    - /var/lib/kubernetes
+
+- name: Create CA key
+  local_action:
+    module: ansible.builtin.shell
+    cmd: "openssl genrsa -out ca.key 2048"
+    args:
+      chdir: /tmp
+      creates: /tmp/ca.key
+  run_once: true
+
+- name: Create CSR
+  local_action:
+    module: ansible.builtin.shell
+    cmd: "openssl req -new -key ca.key -subj \"/CN=KUBERNETES-CA\" -out ca.csr"
+    args:
+      chdir: /tmp
+      creates: /tmp/ca.csr
+  run_once: true
+
+- name: Self sign CSR
+  local_action:
+    module: ansible.builtin.shell
+    cmd: "openssl x509 -req -in ca.csr -signkey ca.key -CAcreateserial  -out ca.crt -days 3650"
+    args:
+      chdir: /tmp
+      creates: /tmp/ca.crt
+  run_once: true
+
+- name: Copy certificates
+  ansible.builtin.copy:
+    src: "{{item.path}}"
+    dest: "/var/lib/kubernetes/{{item.name}}"
+    mode: '0644'
+  loop:
+    - {name: ca.crt, path: /tmp/ca.crt}
+    - {name: ca.key, path: /tmp/ca.key}
+
+

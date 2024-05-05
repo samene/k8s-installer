@@ -1,0 +1,64 @@
+- name: Install kernel modules
+  community.general.modprobe:
+    name: "{{item}}"
+    state: present
+  loop:
+  - overlay
+  - br_netfilter
+- name: Install kernel modules
+  community.general.modprobe:
+    name: "{{item}}"
+    state: present
+  loop:
+  - iptable_nat
+  - iptable_raw
+  - iptable_mangle
+  - iptable_filter
+  - xt_REDIRECT
+  - xt_conntrack
+  - xt_owner
+  - xt_tcpudp
+  when: ansible_os_family == 'RedHat'
+- name: Configure sysctl
+  sysctl:
+    name: "{{item.name}}"
+    value: "{{item.value}}"
+    state: present
+    reload: yes
+  ignore_errors: true
+  loop:
+  - {name: net.ipv4.ip_forward, value: 1}
+  - {name: net.bridge.bridge-nf-call-ip6tables, value: 1}
+  - {name: net.bridge.bridge-nf-call-iptables, value: 1}
+  - {name: kernel.pid_max, value: 4194303}
+  - {name: fs.inotify.max_user_instances, value: 8192}
+  - {name: fs.file-max, value: 1024000}
+  - {name: net.ipv4.ip_local_port_range, value: "11000 65535"}
+  - {name: net.ipv4.tcp_max_tw_buckets, value: 2000000}
+  - {name: net.ipv4.tcp_tw_reuse, value: 1}
+  - {name: net.ipv4.tcp_fin_timeout, value: 10}
+  - {name: net.ipv4.tcp_slow_start_after_idle, value: 0}
+  - {name: net.ipv4.tcp_low_latency, value: 1}
+  - {name: net.core.somaxconn, value: 40960}
+  - {name: net.netfilter.nf_conntrack_tcp_be_liberal, value: 1}
+  loop_control:
+    label: "{{ item.name }}"
+- name: Disable swap (1/2)
+  shell: |
+    swapoff -a
+- name: Disable swap (2/2)
+  replace:
+    path: /etc/fstab
+    regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+    replace: '# \1'
+- block:
+  - name: Install pre-requisite packages
+    yum:
+      name: ['curl','ca-certificates','iscsi-initiator-utils','gpg','jq','tar']
+      update_cache: yes
+  - name: Enable iscsid
+    systemd:
+      name: iscsid
+      state: started
+      enabled: yes
+  when: ansible_os_family == 'RedHat'    

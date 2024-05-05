@@ -1,0 +1,125 @@
+- set_fact:
+    arch: "{{ architecture[ansible_architecture|lower] }}"
+- name: Download etcd release
+  ansible.builtin.get_url:
+    url: "{{ download_url }}/v{{ etcd_version }}/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+    dest: "/tmp"
+    force: true
+    mode: '0755'
+- name: Untar etcd release
+  ansible.builtin.unarchive:
+    src: "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+    dest: "/tmp"
+    remote_src: true
+  register: etcd_untar
+- name: Move etcd binaries
+  ansible.builtin.copy:
+    src: "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}/{{item}}"
+    dest: "/usr/local/bin/{{item}}"
+    mode: '0755'
+    remote_src: true
+  loop:
+    - etcd
+    - etcdctl
+
+- name: Create etcd group
+  ansible.builtin.group:
+    name: etcd
+    state: present
+    system: true
+
+- name: Create etcd user
+  ansible.builtin.user:
+    name: etcd
+    home: /var/lib/etcd
+    shell: /bin/false
+    system: true
+    group: etcd
+
+- name: Create folders
+  ansible.builtin.file:
+    path: "{{item}}"
+    state: directory
+    mode: '0700'
+    owner: etcd
+    group: etcd
+  loop:
+    - /var/lib/etcd
+    - /etc/etcd
+
+- name: Create etcd CA key
+  local_action:
+    module: ansible.builtin.shell
+    cmd: "openssl genrsa -out etcd-ca.key 2048"
+    args:
+      chdir: /etc/etcd
+      creates: /etc/etcd/etcd-ca.key
+  run_once: true
+
+- name: Create etcd CSR
+  local_action:
+    module: ansible.builtin.shell
+    cmd: "openssl req -new -key etcd-ca.key -subj \"/CN=ETCD-CA\" -out etcd-ca.csr"
+    args:
+      chdir: /etc/etcd
+      creates: /etc/etcd/etcd-ca.csr
+  run_once: true
+
+- name: Self sign etcd CSR
+  local_action:
+    module: ansible.builtin.shell
+    cmd: "openssl x509 -req -in etcd-ca.csr -signkey etcd-ca.key -CAcreateserial -out etcd-ca.crt -days 3650"
+    args:
+      chdir: /etc/etcd
+      creates: /etc/etcd/ca.crt
+  run_once: true
+
+- name: Create etcd key
+  ansible.builtin.shell: "openssl genrsa -out etcd.key 2048"
+  args:
+    chdir: /etc/etcd
+    creates: /etc/etcd/etcd.key
+
+- name: Create etcd CSR config
+  ansible.builtin.template:
+    src: etcd.cnf.j2
+    dest: /tmp/etcd.cnf
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: Create etcd CSR
+  ansible.builtin.shell: "openssl req -new -key /etc/etcd/etcd.key -subj \"/CN=etcd\" -out etcd.csr -config etcd.cnf"
+  args:
+    chdir: /tmp
+
+- name: Create etcd certificate
+  ansible.builtin.shell: "openssl x509 -req -in etcd.csr -CA /var/lib/kubernetes/ca.crt -CAkey /var/lib/kubernetes/ca.key -CAcreateserial -out /etc/etcd/etcd.crt -extensions v3_req -extfile etcd.cnf -days 365"
+  args:
+    chdir: /tmp
+
+- set_fact:
+    initial_cluster: "{% for host in groups['etcd'] %}etcd-{{ hostvars[host]['ansible_hostname'] }}=https://{{ hostvars[host]['ansible_default_ipv4']['address'] | default(hostvars[host]['ansible_host']) }}:2380{% if not loop.last %},{% endif %}{% endfor %}"
+
+- name: Create systemd unit file
+  ansible.builtin.template:
+    src: etcd.service.j2
+    dest: /etc/systemd/system/etcd.service
+    mode: '0644'
+    owner: root
+    group: root
+  register: etcd_service
+
+- name: Reload & start service etcd
+  ansible.builtin.service:
+    name: etcd
+    enabled: true
+    state: reloaded
+  when: etcd_service.changed
+  ignore_errors: true
+
+- name: Restart etcd
+  ansible.builtin.service:
+    name: etcd
+    enabled: true
+    state: restarted
