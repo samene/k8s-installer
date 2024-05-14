@@ -1,15 +1,34 @@
+# - name: Trigger downloads on control-plane
+#   hosts: control_plane
+#   become: true
+#   tasks:
+#     - ansible.builtin.include_role:
+#         name: control-plane
+#         tasks_from: download
+
+# - name: Trigger downloads on worker nodes
+#   hosts: worker
+#   become: true
+#   tasks:
+#     - ansible.builtin.include_role:
+#         name: worker
+#         tasks_from: download        
+
 - name: common
   hosts: all
+  become: true
   roles:
     - common
 
 - name: Create etcd cluster
   hosts: etcd
+  become: true
   roles:
     - etcd
 
 - name: Control plane components
-  hosts: control-plane
+  hosts: control_plane
+  become: true
   tags:
     - control-plane
   roles:
@@ -17,5 +36,17 @@
 
 - name: Worker node components
   hosts: worker
+  become: true
+  tags:
+    - worker
   roles:
-    - worker    
+    - worker
+
+- name: post-install
+  hosts: control_plane[0]
+  become: true
+  tags:
+    - post-install
+  tasks:
+    - name: CNI
+      shell: "kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml"

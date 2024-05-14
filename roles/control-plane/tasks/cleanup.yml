@@ -1,0 +1,22 @@
+- set_fact:
+    arch: "{{ architecture[ansible_architecture|lower] }}"
+
+- name: Delete temporary files
+  ansible.builtin.file:
+    path: "{{item}}"
+    state: absent
+  loop:
+  # - "/tmp/kubernetes-server-v{{ kubernetes_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+  # - "/tmp/kubernetes"
+  - /tmp/kube-api.cnf
+  - /tmp/apiserver-etcd-client.csr
+  - /tmp/kube-api.csr
+  - /tmp/kube-controller-manager.csr
+  - /tmp/kube-scheduler.csr
+  - /tmp/service-account.csr
+  - /tmp/front-proxy-client.csr
+  - /tmp/admin.csr
+  - /tmp/etcd-ca.crt
+  - /tmp/etcd-ca.key
+  - /tmp/rbac.yaml
+  ignore_errors: true

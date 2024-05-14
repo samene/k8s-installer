@@ -10,31 +10,48 @@
     group: root
   loop:
     - "{{ ansible_env.HOME }}/.kube"
-    
-- name: Download control plane release
-  ansible.builtin.get_url:
-    url: "{{ download_url }}/v{{ kubernetes_version }}/kubernetes-server-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-    dest: "/tmp/kubernetes-server-v{{ kubernetes_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-    force: false
-    mode: '0755'
 
-- name: Untar control plane release
-  ansible.builtin.unarchive:
-    src: "/tmp/kubernetes-server-v{{ kubernetes_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-    dest: "/tmp"
-    remote_src: true
+# - name: Wait for download to complete
+#   async_status:
+#     jid: "{{ cp_download.ansible_job_id }}"
+#   register: job_result
+#   until: job_result.finished
+#   retries: 100
+#   delay: 10
 
-- name: Move control plane binaries
+# - name: Untar control plane release
+#   ansible.builtin.unarchive:
+#     src: "/tmp/kubernetes-server-v{{ kubernetes_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+#     dest: "/tmp"
+#     remote_src: true
+
+# - name: Move control plane binaries
+#   ansible.builtin.copy:
+#     src: "/tmp/kubernetes/server/bin/{{item}}"
+#     dest: "/usr/local/bin/{{item}}"
+#     mode: '0755'
+#     remote_src: true
+#   loop:
+#     - kube-apiserver
+#     - kube-controller-manager
+#     - kube-scheduler
+#     - kubectl
+
+- set_fact:
+    ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_default_ipv4.address}}{% endif %}"
+
+- name: Copy CA certificates
   ansible.builtin.copy:
-    src: "/tmp/kubernetes/server/bin/{{item}}"
-    dest: "/usr/local/bin/{{item}}"
-    mode: '0755'
-    remote_src: true
+    src: "/tmp/{{item.name}}"
+    dest: "{{item.path}}"
+    mode: '0600'
   loop:
-    - kube-apiserver
-    - kube-controller-manager
-    - kube-scheduler
-    - kubectl
+    - {name: ca.crt, path: /var/lib/kubernetes/ca.crt}
+    - {name: ca.key, path: /var/lib/kubernetes/ca.key}
+    - {name: front-proxy-ca.crt, path: /var/lib/kubernetes/front-proxy-ca.crt}
+    - {name: front-proxy-ca.key, path: /var/lib/kubernetes/front-proxy-ca.key}
+    - {name: etcd-ca.crt, path: /tmp/etcd-ca.crt}
+    - {name: etcd-ca.key, path: /tmp/etcd-ca.key}
 
 - name: Create control plane component keys
   ansible.builtin.shell: "openssl genrsa -out {{item.name}}.key 2048"
@@ -42,6 +59,7 @@
     chdir: /var/lib/kubernetes
     creates: /var/lib/kubernetes/{{item.name}}.key
   loop:
+    - {name: apiserver-etcd-client}  
     - {name: kube-api}
     - {name: kube-controller-manager}
     - {name: kube-scheduler}
@@ -62,24 +80,30 @@
   args:
     chdir: /tmp
 
-- name: Create controlplane certificate csr
+- name: Create controlplane client certificates csr
   ansible.builtin.shell: "openssl req -new -key /var/lib/kubernetes/{{item.name}}.key -subj \"{{item.subject}}\" -out {{item.name}}.csr"
   args:
     chdir: /tmp
   loop:
+    - {name: apiserver-etcd-client, subject: '/CN=kube-apiserver-etcd-client'}
     - {name: kube-controller-manager, subject: '/CN=system:kube-controller-manager'}
     - {name: kube-scheduler, subject: '/CN=system:kube-scheduler'}
     - {name: service-account, subject: '/CN=service-accounts'}
     - {name: front-proxy-client, subject: '/CN=front-proxy-client'}
     - {name: admin, subject: '/CN=admin/O=system:masters'}
 
-- name: Create kube-apiserver certificate
-  ansible.builtin.shell: "openssl x509 -req -in kube-api.csr -CA /var/lib/kubernetes/ca.crt -CAkey /var/lib/kubernetes/ca.key -CAcreateserial -out /var/lib/kubernetes/kube-api.crt -extensions v3_req -extfile kube-api.cnf -days 365"
+- name: Create kube-apiserver server certificate
+  ansible.builtin.shell: "openssl x509 -req -in kube-api.csr -CA /var/lib/kubernetes/ca.crt -CAkey /var/lib/kubernetes/ca.key -out /var/lib/kubernetes/kube-api.crt -extensions v3_req -extfile kube-api.cnf -days 365"
   args:
     chdir: /tmp
 
-- name: Create controlplane certificates
-  ansible.builtin.shell: "openssl x509 -req -in {{item.name}}.csr -CA /var/lib/kubernetes/ca.crt -CAkey /var/lib/kubernetes/ca.key -CAcreateserial -out /var/lib/kubernetes/{{item.name}}.crt -extensions v3_req -days 365"
+- name: Create kube-apiserver-etcd-client certificate
+  ansible.builtin.shell: "openssl x509 -req -in apiserver-etcd-client.csr -CA /tmp/etcd-ca.crt -CAkey /tmp/etcd-ca.key -out /var/lib/kubernetes/apiserver-etcd-client.crt -extensions v3_req -days 365"
+  args:
+    chdir: /tmp
+
+- name: Create controlplane client certificates
+  ansible.builtin.shell: "openssl x509 -req -in {{item.name}}.csr -CA /var/lib/kubernetes/ca.crt -CAkey /var/lib/kubernetes/ca.key -out /var/lib/kubernetes/{{item.name}}.crt -extensions v3_req -days 365"
   args:
     chdir: /tmp
   loop:
@@ -163,13 +187,29 @@
   when: cp_systemd.changed
   ignore_errors: true
 
-- name: Restart service
+- name: Start service
   ansible.builtin.service:
     name: "{{item}}"
     enabled: true
-    state: restarted
+    state: started
   loop:
     - kube-apiserver
     - kube-controller-manager
     - kube-scheduler
 
+- name: Copy RBAC
+  ansible.builtin.copy:
+    src: ./files/rbac.yaml
+    dest: /tmp/rbac.yaml
+    mode: 0644
+
+- name: Apply RBAC
+  ansible.builtin.shell: "kubectl apply -f /tmp/rbac.yaml"
+
+- name: Install coredns
+  ansible.builtin.shell: |
+    helm repo add coredns https://coredns.github.io/helm
+    helm repo update
+    helm --namespace=kube-system install coredns --set service.clusterIP=10.96.0.10 coredns/coredns
+
+- include_tasks: cleanup.yml

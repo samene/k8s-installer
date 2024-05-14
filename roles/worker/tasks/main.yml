@@ -1,7 +1,6 @@
 - set_fact:
     arch: "{{ architecture[ansible_architecture|lower] }}"
 
-
 - name: Create folders
   ansible.builtin.file:
     path: "{{item}}"
@@ -12,32 +11,44 @@
   loop:
     - "/var/lib/kubelet"
     - "/var/lib/kube-proxy"
-    - "/opt/cni/bin"
+    # - "/opt/cni/bin"
 
-- name: Download worker node release
-  ansible.builtin.get_url:
-    url: "{{ download_url }}/v{{ kubernetes_version }}/kubernetes-node-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-    dest: "/tmp/kubernetes-node-v{{ kubernetes_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-    force: false
-    mode: '0755'
+# - include_tasks: pre_requisites.yml
+# - include_tasks: cri.yml
 
-- name: Untar worker node release
-  ansible.builtin.unarchive:
-    src: "/tmp/kubernetes-node-v{{ kubernetes_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-    dest: "/tmp"
-    remote_src: true
+# - name: Wait for download to complete
+#   async_status:
+#     jid: "{{ worker_download.ansible_job_id }}"
+#   register: job_result
+#   until: job_result.finished
+#   retries: 100
+#   delay: 10
 
-- name: Move worker node binaries
+# - name: Untar worker node release
+#   ansible.builtin.unarchive:
+#     src: "/tmp/kubernetes-node-v{{ kubernetes_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+#     dest: "/tmp"
+#     remote_src: true
+
+# - name: Move worker node binaries
+#   ansible.builtin.copy:
+#     src: "/tmp/kubernetes/node/bin/{{item}}"
+#     dest: "/usr/local/bin/{{item}}"
+#     mode: '0755'
+#     remote_src: true
+#   loop:
+#     - kubelet
+#     - kube-proxy
+#     - kubectl
+
+- name: Copy CA certificates
   ansible.builtin.copy:
-    src: "/tmp/kubernetes/node/bin/{{item}}"
-    dest: "/usr/local/bin/{{item}}"
-    mode: '0755'
-    remote_src: true
+    src: "/tmp/{{item.name}}"
+    dest: "{{item.path}}"
+    mode: '0600'
   loop:
-    - kubelet
-    - kube-proxy
-
-- include_tasks: pre_requisites.yml
+    - {name: ca.crt, path: /var/lib/kubernetes/ca.crt}
+    - {name: ca.key, path: /tmp/ca.key}
 
 - name: Create worker node component keys
   ansible.builtin.shell: "openssl genrsa -out {{item.name}}.key 2048"
@@ -57,7 +68,7 @@
     - {folder: kube-proxy, name: kube-proxy, subject: '/CN=system:kube-proxy'}
 
 - name: Create worker node certificates
-  ansible.builtin.shell: "openssl x509 -req -in {{item.name}}.csr -CA /var/lib/kubernetes/ca.crt -CAkey /var/lib/kubernetes/ca.key -CAcreateserial -out /var/lib/{{item.folder}}/{{item.name}}.crt -extensions v3_req -days 365"
+  ansible.builtin.shell: "openssl x509 -req -in {{item.name}}.csr -CA /var/lib/kubernetes/ca.crt -CAkey /tmp/ca.key -out /var/lib/{{item.folder}}/{{item.name}}.crt -extensions v3_req -days 365"
   args:
     chdir: /tmp
   loop:
@@ -75,8 +86,11 @@
     - {folder: kubelet, name: kubelet-config}
     - {folder: kube-proxy, name: kube-proxy-config}
 
+- set_fact:
+    cp_endpoint: "{{hostvars[groups['control_plane'][0]]['internal_ip']}}"
+
 - name: Generate Kubeconfigs (1/4)
-  ansible.builtin.shell: "kubectl config set-cluster kubernetes --certificate-authority=/var/lib/kubernetes/ca.crt --embed-certs=true --server=https://{{ hostvars[groups['control-plane'][0]]['ansible_default_ipv4']['address']}}:6443 --kubeconfig=/var/lib/{{item.folder}}/{{item.name}}.kubeconfig"
+  ansible.builtin.shell: "kubectl config set-cluster kubernetes --certificate-authority=/var/lib/kubernetes/ca.crt --embed-certs=true --server=https://{{cp_endpoint}}:6443 --kubeconfig=/var/lib/{{item.folder}}/{{item.name}}.kubeconfig"
   loop:
     - {folder: kubelet, name: "{{ ansible_hostname }}"}
     - {folder: kube-proxy, name: kube-proxy}
@@ -122,13 +136,14 @@
   when: worker_systemd.changed
   ignore_errors: true
 
-- name: Reload & start service
+- name: Start service
   ansible.builtin.service:
     name: "{{item}}"
     enabled: true
-    state: restarted
+    state: started
   loop:
     - kubelet
     - kube-proxy
 
-- include_tasks: cni.yml
+# - include_tasks: cni.yml
+- include_tasks: cleanup.yml

@@ -1,0 +1,23 @@
+name: etcd-{{ansible_hostname}}
+data-dir: /var/lib/etcd
+
+client-transport-security:
+  cert-file: /etc/etcd/etcd.crt
+  key-file: /etc/etcd/etcd.key
+  trusted-ca-file: /etc/etcd/ca.crt
+  client-cert-auth: true
+  auto-tls: false
+peer-transport-security:
+  cert-file: /etc/etcd/etcd.crt
+  key-file: /etc/etcd/etcd.key
+  trusted-ca-file: /etc/etcd/ca.crt
+  client-cert-auth: true
+  auto-tls: false
+
+initial-advertise-peer-urls: https://{{ip_address}}:2380
+listen-peer-urls: https://{{ip_address}}:2380
+listen-client-urls: https://{{ip_address}}:2379,https://127.0.0.1:2379
+advertise-client-urls: https://{{ip_address}}:2379
+initial-cluster-token: etcd-cluster-token
+initial-cluster: {{initial_cluster}}
+initial-cluster-state: new

@@ -1,26 +1,26 @@
 - set_fact:
     arch: "{{ architecture[ansible_architecture|lower] }}"
-- name: Download etcd release
-  ansible.builtin.get_url:
-    url: "{{ download_url }}/v{{ etcd_version }}/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-    dest: "/tmp"
-    force: true
-    mode: '0755'
-- name: Untar etcd release
-  ansible.builtin.unarchive:
-    src: "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-    dest: "/tmp"
-    remote_src: true
-  register: etcd_untar
-- name: Move etcd binaries
-  ansible.builtin.copy:
-    src: "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}/{{item}}"
-    dest: "/usr/local/bin/{{item}}"
-    mode: '0755'
-    remote_src: true
-  loop:
-    - etcd
-    - etcdctl
+# - name: Download etcd release
+#   ansible.builtin.get_url:
+#     url: "{{ download_url }}/v{{ etcd_version }}/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+#     dest: "/tmp"
+#     force: false
+#     mode: '0755'
+# - name: Untar etcd release
+#   ansible.builtin.unarchive:
+#     src: "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+#     dest: "/tmp"
+#     remote_src: true
+#   register: etcd_untar
+# - name: Move etcd binaries
+#   ansible.builtin.copy:
+#     src: "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}/{{item}}"
+#     dest: "/usr/local/bin/{{item}}"
+#     mode: '0755'
+#     remote_src: true
+#   loop:
+#     - etcd
+#     - etcdctl
 
 - name: Create etcd group
   ansible.builtin.group:
@@ -47,35 +47,27 @@
     - /var/lib/etcd
     - /etc/etcd
 
-- name: Create etcd CA key
-  local_action:
-    module: ansible.builtin.shell
-    cmd: "openssl genrsa -out etcd-ca.key 2048"
-    args:
-      chdir: /etc/etcd
-      creates: /etc/etcd/etcd-ca.key
-  run_once: true
+- set_fact:
+    ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_default_ipv4.address}}{% endif %}"
+- set_fact:
+    initial_cluster: "{% for host in groups['etcd'] %}etcd-{{ hostvars[host]['ansible_hostname'] }}=https://{{hostvars[host]['ip_address']}}:2380{% if not loop.last %},{% endif %}{% endfor %}"
 
-- name: Create etcd CSR
-  local_action:
-    module: ansible.builtin.shell
-    cmd: "openssl req -new -key etcd-ca.key -subj \"/CN=ETCD-CA\" -out etcd-ca.csr"
-    args:
-      chdir: /etc/etcd
-      creates: /etc/etcd/etcd-ca.csr
-  run_once: true
-
-- name: Self sign etcd CSR
-  local_action:
-    module: ansible.builtin.shell
-    cmd: "openssl x509 -req -in etcd-ca.csr -signkey etcd-ca.key -CAcreateserial -out etcd-ca.crt -days 3650"
-    args:
-      chdir: /etc/etcd
-      creates: /etc/etcd/ca.crt
-  run_once: true
+- name: Copy CA certificate
+  ansible.builtin.copy:
+    src: "/tmp/{{item.name}}"
+    dest: "{{item.path}}"
+    owner: etcd
+    group: etcd
+    mode: '0600'
+  loop:
+    - {name: etcd-ca.crt, path: /etc/etcd/ca.crt}
+    - {name: etcd-ca.key, path: /etc/etcd/ca.key}
 
 - name: Create etcd key
-  ansible.builtin.shell: "openssl genrsa -out etcd.key 2048"
+  ansible.builtin.shell: |
+    openssl genrsa -out etcd.key 2048
+    chown etcd:etcd etcd.key
+    chmod 600 etcd.key
   args:
     chdir: /etc/etcd
     creates: /etc/etcd/etcd.key
@@ -94,12 +86,20 @@
     chdir: /tmp
 
 - name: Create etcd certificate
-  ansible.builtin.shell: "openssl x509 -req -in etcd.csr -CA /var/lib/kubernetes/ca.crt -CAkey /var/lib/kubernetes/ca.key -CAcreateserial -out /etc/etcd/etcd.crt -extensions v3_req -extfile etcd.cnf -days 365"
+  ansible.builtin.shell: |
+    openssl x509 -req -in etcd.csr -CA /etc/etcd/ca.crt -CAkey /etc/etcd/ca.key -out /etc/etcd/etcd.crt -extensions v3_req -extfile etcd.cnf -days 365
+    chown etcd:etcd /etc/etcd/etcd.crt
+    chmod 600 /etc/etcd/etcd.crt
   args:
     chdir: /tmp
 
-- set_fact:
-    initial_cluster: "{% for host in groups['etcd'] %}etcd-{{ hostvars[host]['ansible_hostname'] }}=https://{{ hostvars[host]['ansible_default_ipv4']['address'] | default(hostvars[host]['ansible_host']) }}:2380{% if not loop.last %},{% endif %}{% endfor %}"
+- name: Create etcd config file
+  ansible.builtin.template:
+    src: etcd-config.yml.j2
+    dest: /etc/etcd/etcd-config.yml
+    mode: '0644'
+    owner: root
+    group: root
 
 - name: Create systemd unit file
   ansible.builtin.template:
@@ -117,9 +117,12 @@
     state: reloaded
   when: etcd_service.changed
   ignore_errors: true
+  no_log: true
 
-- name: Restart etcd
+- name: Start etcd
   ansible.builtin.service:
     name: etcd
     enabled: true
-    state: restarted
+    state: started
+
+- include_tasks: cleanup.yml

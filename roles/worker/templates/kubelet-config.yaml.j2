@@ -6,11 +6,14 @@ authentication:
   webhook:
     enabled: true
   x509:
-      clientCAFile: "/var/lib/kubernetes/ca.crt"
+    clientCAFile: "/var/lib/kubernetes/ca.crt"
 authorization:
   mode: Webhook
 clusterDomain: "cluster.local"
 clusterDNS:
   - "10.96.0.10"
 runtimeRequestTimeout: "15m"
+readOnlyPort: 0
+protectKernelDefaults: true
 cgroupDriver: systemd
+resolvConf: /run/systemd/resolve/resolv.conf

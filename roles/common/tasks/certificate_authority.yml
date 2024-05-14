@@ -9,40 +9,44 @@
   loop:
     - /var/lib/kubernetes
 
-- name: Create CA key
+- name: Create CA keys
   local_action:
     module: ansible.builtin.shell
-    cmd: "openssl genrsa -out ca.key 2048"
+    cmd: "openssl genrsa -out {{item}}.key 2048"
     args:
       chdir: /tmp
-      creates: /tmp/ca.key
+      creates: "/tmp/{{item}}.key"
   run_once: true
+  loop:
+    - ca
+    - etcd-ca
+    - front-proxy-ca
 
 - name: Create CSR
   local_action:
     module: ansible.builtin.shell
-    cmd: "openssl req -new -key ca.key -subj \"/CN=KUBERNETES-CA\" -out ca.csr"
+    cmd: "openssl req -new -key {{item.name}}.key -subj \"{{item.subject}}\" -out {{item.name}}.csr"
     args:
       chdir: /tmp
-      creates: /tmp/ca.csr
+      creates: /tmp/{{item.name}}.csr
   run_once: true
+  loop:
+    - {name: ca, subject: "/CN=KUBERNETES-CA"}
+    - {name: etcd-ca, subject: "/CN=ETCD-CA"}
+    - {name: front-proxy-ca, subject: "/CN=FRONT-PROXY-CA"}
 
 - name: Self sign CSR
   local_action:
     module: ansible.builtin.shell
-    cmd: "openssl x509 -req -in ca.csr -signkey ca.key -CAcreateserial  -out ca.crt -days 3650"
+    cmd: "openssl x509 -req -in {{item}}.csr -signkey {{item}}.key -CAcreateserial -out {{item}}.crt -days 3650"
     args:
       chdir: /tmp
-      creates: /tmp/ca.crt
+      creates: /tmp/{{item}}.crt
   run_once: true
-
-- name: Copy certificates
-  ansible.builtin.copy:
-    src: "{{item.path}}"
-    dest: "/var/lib/kubernetes/{{item.name}}"
-    mode: '0644'
   loop:
-    - {name: ca.crt, path: /tmp/ca.crt}
-    - {name: ca.key, path: /tmp/ca.key}
+    - ca
+    - etcd-ca
+    - front-proxy-ca
+
 
 
