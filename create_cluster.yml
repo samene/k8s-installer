@@ -1,34 +1,20 @@
-# - name: Trigger downloads on control-plane
-#   hosts: control_plane
-#   become: true
-#   tasks:
-#     - ansible.builtin.include_role:
-#         name: control-plane
-#         tasks_from: download
-
-# - name: Trigger downloads on worker nodes
-#   hosts: worker
-#   become: true
-#   tasks:
-#     - ansible.builtin.include_role:
-#         name: worker
-#         tasks_from: download        
-
+---
 - name: common
   hosts: all
-  become: true
   roles:
     - common
 
 - name: Create etcd cluster
   hosts: etcd
   become: true
+  any_errors_fatal: true
   roles:
     - etcd
 
 - name: Control plane components
   hosts: control_plane
   become: true
+  any_errors_fatal: true
   tags:
     - control-plane
   roles:
@@ -37,6 +23,7 @@
 - name: Worker node components
   hosts: worker
   become: true
+  any_errors_fatal: true
   tags:
     - worker
   roles:

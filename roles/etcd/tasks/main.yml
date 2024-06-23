@@ -1,26 +1,26 @@
 - set_fact:
     arch: "{{ architecture[ansible_architecture|lower] }}"
-# - name: Download etcd release
-#   ansible.builtin.get_url:
-#     url: "{{ download_url }}/v{{ etcd_version }}/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-#     dest: "/tmp"
-#     force: false
-#     mode: '0755'
-# - name: Untar etcd release
-#   ansible.builtin.unarchive:
-#     src: "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-#     dest: "/tmp"
-#     remote_src: true
-#   register: etcd_untar
-# - name: Move etcd binaries
-#   ansible.builtin.copy:
-#     src: "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}/{{item}}"
-#     dest: "/usr/local/bin/{{item}}"
-#     mode: '0755'
-#     remote_src: true
-#   loop:
-#     - etcd
-#     - etcdctl
+- name: Download etcd release
+  ansible.builtin.get_url:
+    url: "{{ download_url }}/v{{ etcd_version }}/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+    dest: "/tmp"
+    force: false
+    mode: '0755'
+- name: Untar etcd release
+  ansible.builtin.unarchive:
+    src: "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+    dest: "/tmp"
+    remote_src: true
+  register: etcd_untar
+- name: Move etcd binaries
+  ansible.builtin.copy:
+    src: "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}/{{item}}"
+    dest: "/usr/local/bin/{{item}}"
+    mode: '0755'
+    remote_src: true
+  loop:
+    - etcd
+    - etcdctl
 
 - name: Create etcd group
   ansible.builtin.group:

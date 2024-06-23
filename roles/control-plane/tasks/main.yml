@@ -11,31 +11,30 @@
   loop:
     - "{{ ansible_env.HOME }}/.kube"
 
-# - name: Wait for download to complete
-#   async_status:
-#     jid: "{{ cp_download.ansible_job_id }}"
-#   register: job_result
-#   until: job_result.finished
-#   retries: 100
-#   delay: 10
+- name: Download control-plane release
+  ansible.builtin.get_url:
+    url: "{{ download_url }}/v{{ kubernetes_version }}/kubernetes-server-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+    dest: "/tmp"
+    force: false
+    mode: '0755'
 
-# - name: Untar control plane release
-#   ansible.builtin.unarchive:
-#     src: "/tmp/kubernetes-server-v{{ kubernetes_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-#     dest: "/tmp"
-#     remote_src: true
+- name: Untar control plane release
+  ansible.builtin.unarchive:
+    src: "/tmp/kubernetes-server-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+    dest: "/tmp"
+    remote_src: true
 
-# - name: Move control plane binaries
-#   ansible.builtin.copy:
-#     src: "/tmp/kubernetes/server/bin/{{item}}"
-#     dest: "/usr/local/bin/{{item}}"
-#     mode: '0755'
-#     remote_src: true
-#   loop:
-#     - kube-apiserver
-#     - kube-controller-manager
-#     - kube-scheduler
-#     - kubectl
+- name: Move control plane binaries
+  ansible.builtin.copy:
+    src: "/tmp/kubernetes/server/bin/{{item}}"
+    dest: "/usr/local/bin/{{item}}"
+    mode: '0755'
+    remote_src: true
+  loop:
+    - kube-apiserver
+    - kube-controller-manager
+    - kube-scheduler
+    - kubectl
 
 - set_fact:
     ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_default_ipv4.address}}{% endif %}"
@@ -206,10 +205,13 @@
 - name: Apply RBAC
   ansible.builtin.shell: "kubectl apply -f /tmp/rbac.yaml"
 
+- name: Install helm
+  ansible.builtin.shell: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
 - name: Install coredns
   ansible.builtin.shell: |
     helm repo add coredns https://coredns.github.io/helm
     helm repo update
-    helm --namespace=kube-system install coredns --set service.clusterIP=10.96.0.10 coredns/coredns
+    helm --namespace=kube-system upgrade --install coredns --set service.clusterIP=10.96.0.10 coredns/coredns
 
 - include_tasks: cleanup.yml

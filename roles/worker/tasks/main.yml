@@ -11,35 +11,34 @@
   loop:
     - "/var/lib/kubelet"
     - "/var/lib/kube-proxy"
-    # - "/opt/cni/bin"
+    - "/opt/cni/bin"
 
-# - include_tasks: pre_requisites.yml
-# - include_tasks: cri.yml
+- include_tasks: pre_requisites.yml
+- include_tasks: cri.yml
 
-# - name: Wait for download to complete
-#   async_status:
-#     jid: "{{ worker_download.ansible_job_id }}"
-#   register: job_result
-#   until: job_result.finished
-#   retries: 100
-#   delay: 10
+- name: Download worker release
+  ansible.builtin.get_url:
+    url: "{{ download_url }}/v{{ kubernetes_version }}/kubernetes-node-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+    dest: "/tmp"
+    force: false
+    mode: '0755'
 
-# - name: Untar worker node release
-#   ansible.builtin.unarchive:
-#     src: "/tmp/kubernetes-node-v{{ kubernetes_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-#     dest: "/tmp"
-#     remote_src: true
+- name: Untar worker node release
+  ansible.builtin.unarchive:
+    src: "/tmp/kubernetes-node-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+    dest: "/tmp"
+    remote_src: true
 
-# - name: Move worker node binaries
-#   ansible.builtin.copy:
-#     src: "/tmp/kubernetes/node/bin/{{item}}"
-#     dest: "/usr/local/bin/{{item}}"
-#     mode: '0755'
-#     remote_src: true
-#   loop:
-#     - kubelet
-#     - kube-proxy
-#     - kubectl
+- name: Move worker node binaries
+  ansible.builtin.copy:
+    src: "/tmp/kubernetes/node/bin/{{item}}"
+    dest: "/usr/local/bin/{{item}}"
+    mode: '0755'
+    remote_src: true
+  loop:
+    - kubelet
+    - kube-proxy
+    - kubectl
 
 - name: Copy CA certificates
   ansible.builtin.copy:
@@ -145,5 +144,5 @@
     - kubelet
     - kube-proxy
 
-# - include_tasks: cni.yml
+- include_tasks: cni.yml
 - include_tasks: cleanup.yml

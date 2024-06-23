@@ -6,8 +6,8 @@
     path: "{{item}}"
     state: absent
   loop:
-  # - "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-  # - "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}"
+  - "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+  - "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}"
   - /tmp/etcd.cnf
   - /tmp/etcd.csr
   ignore_errors: true

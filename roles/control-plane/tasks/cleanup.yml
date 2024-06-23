@@ -6,8 +6,8 @@
     path: "{{item}}"
     state: absent
   loop:
-  # - "/tmp/kubernetes-server-v{{ kubernetes_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-  # - "/tmp/kubernetes"
+  - "/tmp/kubernetes-server-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+  - /tmp/kubernetes
   - /tmp/kube-api.cnf
   - /tmp/apiserver-etcd-client.csr
   - /tmp/kube-api.csr
