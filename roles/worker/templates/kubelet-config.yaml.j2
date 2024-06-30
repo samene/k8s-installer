@@ -16,4 +16,6 @@ runtimeRequestTimeout: "15m"
 readOnlyPort: 0
 protectKernelDefaults: true
 cgroupDriver: systemd
+{% if resolvd.stat.exists %}
 resolvConf: /run/systemd/resolve/resolv.conf
+{% endif %}

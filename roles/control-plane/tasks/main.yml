@@ -11,30 +11,32 @@
   loop:
     - "{{ ansible_env.HOME }}/.kube"
 
-- name: Download control-plane release
-  ansible.builtin.get_url:
-    url: "{{ download_url }}/v{{ kubernetes_version }}/kubernetes-server-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-    dest: "/tmp"
-    force: false
-    mode: '0755'
+- block:
+  - name: Download control-plane release
+    ansible.builtin.get_url:
+      url: "{{ download_url }}/v{{ kubernetes_version }}/kubernetes-server-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+      dest: "/tmp"
+      force: false
+      mode: '0755'
 
-- name: Untar control plane release
-  ansible.builtin.unarchive:
-    src: "/tmp/kubernetes-server-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-    dest: "/tmp"
-    remote_src: true
+  - name: Untar control plane release
+    ansible.builtin.unarchive:
+      src: "/tmp/kubernetes-server-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+      dest: "/tmp"
+      remote_src: true
 
-- name: Move control plane binaries
-  ansible.builtin.copy:
-    src: "/tmp/kubernetes/server/bin/{{item}}"
-    dest: "/usr/local/bin/{{item}}"
-    mode: '0755'
-    remote_src: true
-  loop:
-    - kube-apiserver
-    - kube-controller-manager
-    - kube-scheduler
-    - kubectl
+  - name: Move control plane binaries
+    ansible.builtin.copy:
+      src: "/tmp/kubernetes/server/bin/{{item}}"
+      dest: "/usr/local/bin/{{item}}"
+      mode: '0755'
+      remote_src: true
+    loop:
+      - kube-apiserver
+      - kube-controller-manager
+      - kube-scheduler
+      - kubectl
+  when: not skip_download | default('false') | bool
 
 - set_fact:
     ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_default_ipv4.address}}{% endif %}"

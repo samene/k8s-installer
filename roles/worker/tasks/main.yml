@@ -13,32 +13,34 @@
     - "/var/lib/kube-proxy"
     - "/opt/cni/bin"
 
-- include_tasks: pre_requisites.yml
-- include_tasks: cri.yml
+- block:
+  - include_tasks: pre_requisites.yml
+  - include_tasks: cri.yml
 
-- name: Download worker release
-  ansible.builtin.get_url:
-    url: "{{ download_url }}/v{{ kubernetes_version }}/kubernetes-node-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-    dest: "/tmp"
-    force: false
-    mode: '0755'
+  - name: Download worker release
+    ansible.builtin.get_url:
+      url: "{{ download_url }}/v{{ kubernetes_version }}/kubernetes-node-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+      dest: "/tmp"
+      force: false
+      mode: '0755'
 
-- name: Untar worker node release
-  ansible.builtin.unarchive:
-    src: "/tmp/kubernetes-node-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-    dest: "/tmp"
-    remote_src: true
+  - name: Untar worker node release
+    ansible.builtin.unarchive:
+      src: "/tmp/kubernetes-node-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+      dest: "/tmp"
+      remote_src: true
 
-- name: Move worker node binaries
-  ansible.builtin.copy:
-    src: "/tmp/kubernetes/node/bin/{{item}}"
-    dest: "/usr/local/bin/{{item}}"
-    mode: '0755'
-    remote_src: true
-  loop:
-    - kubelet
-    - kube-proxy
-    - kubectl
+  - name: Move worker node binaries
+    ansible.builtin.copy:
+      src: "/tmp/kubernetes/node/bin/{{item}}"
+      dest: "/usr/local/bin/{{item}}"
+      mode: '0755'
+      remote_src: true
+    loop:
+      - kubelet
+      - kube-proxy
+      - kubectl
+  when: not skip_download | default('false') | bool
 
 - name: Copy CA certificates
   ansible.builtin.copy:
@@ -73,6 +75,11 @@
   loop:
     - {folder: kubelet, name: "{{ ansible_hostname }}" }
     - {folder: kube-proxy, name: kube-proxy }
+
+- name: Check resolv.conf
+  ansible.builtin.stat:
+    path: /run/systemd/resolve/resolv.conf
+  register: resolvd
 
 - name: Create worker node configs
   ansible.builtin.template:
@@ -145,4 +152,6 @@
     - kube-proxy
 
 - include_tasks: cni.yml
+  when: not skip_download | default('false') | bool
+
 - include_tasks: cleanup.yml
