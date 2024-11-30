@@ -36,4 +36,5 @@
     - post-install
   tasks:
     - name: CNI
-      shell: "kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml"
+      shell: "kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v{{canal_version|default('3.29.1')}}/manifests/canal.yaml"
+

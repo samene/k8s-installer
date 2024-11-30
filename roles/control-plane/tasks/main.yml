@@ -215,5 +215,6 @@
     helm repo add coredns https://coredns.github.io/helm
     helm repo update
     helm --namespace=kube-system upgrade --install coredns --set service.clusterIP=10.96.0.10 coredns/coredns
+  run_once: true
 
 - include_tasks: cleanup.yml

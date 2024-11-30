@@ -93,7 +93,7 @@
     - {folder: kube-proxy, name: kube-proxy-config}
 
 - set_fact:
-    cp_endpoint: "{{hostvars[groups['control_plane'][0]]['internal_ip']}}"
+    cp_endpoint: "{% if hostvars[groups['control_plane'][0]]['loadbalancer_int_ip'] is defined %}{{hostvars[groups['control_plane'][0]]['loadbalancer_int_ip']}}{% else %}{{hostvars[groups['control_plane'][0]]['internal_ip']}}{% endif %}"
 
 - name: Generate Kubeconfigs (1/4)
   ansible.builtin.shell: "kubectl config set-cluster kubernetes --certificate-authority=/var/lib/kubernetes/ca.crt --embed-certs=true --server=https://{{cp_endpoint}}:6443 --kubeconfig=/var/lib/{{item.folder}}/{{item.name}}.kubeconfig"

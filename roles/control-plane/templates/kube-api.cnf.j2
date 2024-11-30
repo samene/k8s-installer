@@ -16,3 +16,8 @@ IP.2 = {{ip_address}}
 IP.3 = {{ansible_default_ipv4.address}}
 IP.4 = {{inventory_hostname}}
 IP.5 = 10.96.0.1
+{% if loadbalancer_ext_ip is defined %}
+IP.6 = {{loadbalancer_ext_ip}}
+IP.7 = {{loadbalancer_int_ip}}
+{% endif %}
+

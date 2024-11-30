@@ -1,0 +1,5 @@
+etcd_version: 3.5.17
+kubernetes_version: 1.31.3
+cni_version: 1.6.0
+flannel_version: 0.25.5
+canal_version: 3.29.1  

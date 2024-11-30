@@ -1,1 +1,10 @@
 - include_tasks: certificate_authority.yml
+
+- name: Install Base packages
+  package:
+    name: "{{item}}"
+  loop:
+    - unzip
+    - curl
+    - tar
+
