@@ -1,0 +1,17 @@
+[Unit]
+Description=flanneld
+Documentation=https://github.com/flannel-io/flannel/
+
+[Service]
+ExecStart=/usr/local/bin/flanneld \
+  --etcd-endpoints={{ etcd_cluster }} \
+  --etcd-keyfile=/var/lib/kubernetes/etcd-flannel.key \
+  --etcd-certfile=/var/lib/kubernetes/etcd-flannel.crt \
+  --etcd-cafile=/var/lib/kubernetes/etcd-ca.crt \
+  --ip-masq
+Restart=on-failure
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target

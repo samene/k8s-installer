@@ -1,0 +1,13 @@
+- set_fact:
+    arch: "{{ architecture[ansible_architecture|lower] }}"
+
+- name: Delete temporary files
+  ansible.builtin.file:
+    path: "{{item}}"
+    state: absent
+  loop:
+  - "/tmp/flannel-v{{ flanneld_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+  - "/tmp/cni-plugin-flannel-{{ansible_system | lower}}-{{ arch }}-v{{ flannel_version }}-flannel1.tgz"
+  - /tmp/flannel-{{ arch }}
+  - /tmp/flanneld
+  ignore_errors: true

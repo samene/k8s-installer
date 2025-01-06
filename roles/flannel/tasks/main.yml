@@ -1,0 +1,72 @@
+- set_fact:
+    arch: "{{ architecture[ansible_architecture|lower] }}"
+- block:
+  - name: Download flanneld
+    ansible.builtin.get_url:
+      url: "{{ flanneld_download_url }}/v{{flanneld_version}}/flannel-v{{flanneld_version}}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+      dest: "/tmp"
+      force: false
+      mode: '0755'
+  - name: Untar flanneld release
+    ansible.builtin.unarchive:
+      src: "/tmp/flannel-v{{ flanneld_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+      dest: "/tmp"
+      remote_src: true
+    register: flannedl_untar
+  - name: Move flanneld binary
+    ansible.builtin.copy:
+      src: "/tmp/flanneld"
+      dest: "/usr/local/bin/flanneld"
+      mode: '0755'
+      remote_src: true
+  when: not skip_download | default('false') | bool
+
+- block:
+  - name: Download flannel
+    ansible.builtin.get_url:
+      url: "{{ flannel_download_url }}/v{{ flannel_version }}-flannel1/cni-plugin-flannel-{{ansible_system | lower}}-{{ arch }}-v{{ flannel_version }}-flannel1.tgz"
+      dest: "/tmp"
+      force: false
+      mode: '0755'
+  - name: Untar flannel release
+    ansible.builtin.unarchive:
+      src: "/tmp/cni-plugin-flannel-{{ansible_system | lower}}-{{ arch }}-v{{ flannel_version }}-flannel1.tgz"
+      dest: "/tmp"
+      remote_src: true
+    register: flannel_untar
+  - name: Move flannel binary
+    ansible.builtin.copy:
+      src: "/tmp/flannel-{{ arch }}"
+      dest: "/opt/cni/bin/flannel"
+      mode: '0755'
+      remote_src: true
+  when: not skip_download | default('false') | bool
+
+- set_fact:
+    etcd_cluster: "{% for host in groups['etcd'] %}https://{{hostvars[host]['ip_address']}}:2379{% if not loop.last %},{% endif %}{% endfor %}"
+
+- name: Create systemd unit file
+  ansible.builtin.template:
+    src: flanneld.service.j2
+    dest: /etc/systemd/system/flanneld.service
+    mode: '0644'
+    owner: root
+    group: root
+  register: flanneld_service
+
+- name: Reload & start flanneld etcd
+  ansible.builtin.service:
+    name: flanneld
+    enabled: true
+    state: reloaded
+  when: flanneld_service.changed
+  ignore_errors: true
+  no_log: true
+
+- name: Start flanneld
+  ansible.builtin.service:
+    name: flanneld
+    enabled: true
+    state: started
+
+- include_tasks: cleanup.yml

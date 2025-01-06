@@ -1,3 +1,16 @@
+- name: Create folders
+  ansible.builtin.file:
+    path: "{{item}}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  become: true
+  loop:
+    - /var/lib/kubernetes
+    - /opt/cni/bin
+    - /etc/cni/net.d
+
 - include_tasks: certificate_authority.yml
 
 - name: Install Base packages
@@ -5,6 +18,12 @@
     name: "{{item}}"
   loop:
     - unzip
+    - conntrack
     - curl
     - tar
+  ignore_errors: true
 
+- include_tasks: cni.yml
+  when: not skip_download | default('false') | bool
+
+- include_tasks: cleanup.yml

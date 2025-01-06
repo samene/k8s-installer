@@ -1,12 +1,38 @@
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: yes
-  when: ansible_os_family == 'Debian'
-- name: Install containerd
-  package:
-    name: containerd
-    state: present
-  register: install_containerd
+- set_fact:
+    arch: "{{ architecture[ansible_architecture|lower] }}"
+
+- block:
+  - name: Download containerd
+    ansible.builtin.get_url:
+      url: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/containerd-{{ containerd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+      dest: "/tmp"
+      force: false
+      mode: '0755'
+
+  - name: Download runc
+    ansible.builtin.get_url:
+      url: "https://github.com/opencontainers/runc/releases/download/v{{ runc_version }}/runc.{{ arch }}"
+      dest: "/tmp"
+      force: false
+      mode: '0755'
+
+  - name: Untar containerd release
+    ansible.builtin.unarchive:
+      src: "/tmp/containerd-{{ containerd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+      dest: "/usr/local"
+      remote_src: true
+
+  - name: Install runc
+    shell: "install -m 755 /tmp/runc.{{ arch }} /usr/local/sbin/runc"
+
+  when: not skip_download | default('false') | bool
+
+- name: Copy systemd file
+  ansible.builtin.copy:
+    src: files/containerd.service
+    dest: /usr/local/lib/systemd/system/containerd.service
+    mode: 0755
+
 - name: Configure containerd (1/3)
   shell: "mkdir -p /etc/containerd && containerd config default | tee /etc/containerd/config.toml"
   args:
@@ -22,10 +48,11 @@
   shell: mkdir -p /etc/apparmor.d/disable && ln -s /etc/apparmor.d/runc /etc/apparmor.d/disable/ && apparmor_parser -R /etc/apparmor.d/runc
   failed_when: false
   when: ansible_os_family == 'Debian'
-- name: Restart containerd
-  systemd:
-    name: containerd
-    state: restarted
-    daemon_reload: true
+
+- name: Reload & start service
+  ansible.builtin.service:
+    name: "containerd"
     enabled: true
-  when: install_containerd.changed
+    state: reloaded
+  ignore_errors: true
+

@@ -1,13 +1,16 @@
 ---
 - name: common
   hosts: all
+  any_errors_fatal: true
+  tags:
+    - common
   roles:
     - common
 
 - name: Create etcd cluster
   hosts: etcd
-  become: true
   any_errors_fatal: true
+  become: true
   roles:
     - etcd
 
@@ -21,7 +24,7 @@
     - control-plane
 
 - name: Worker node components
-  hosts: worker
+  hosts: control_plane,worker
   become: true
   any_errors_fatal: true
   tags:
@@ -30,11 +33,20 @@
     - worker
 
 - name: post-install
-  hosts: control_plane[0]
+  hosts: etcd[0]
+  any_errors_fatal: true
+  become: true
+  tags:
+  - post-install
+  tasks:
+  - shell: "etcdctl --cert=/etc/etcd/etcd.crt --key=/etc/etcd/etcd.key --cacert=/etc/etcd/ca.crt --insecure-skip-tls-verify put /coreos.com/network/config '{ \"Network\": \"10.244.0.0/16\", \"Backend\": {\"Type\": \"vxlan\"}}'"
+
+- name: post-install
+  hosts: all
+  any_errors_fatal: true
   become: true
   tags:
     - post-install
-  tasks:
-    - name: CNI
-      shell: "kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v{{canal_version|default('3.29.1')}}/manifests/canal.yaml"
+  roles:
+    - flannel
 

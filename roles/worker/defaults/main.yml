@@ -1,3 +1,4 @@
 download_url: https://dl.k8s.io
 kubernetes_version: '1.30.0'
-cni_version: '1.4.1'
+containerd_version: '2.0.1'
+runc_version: '1.2.3'

@@ -1,0 +1,73 @@
+- set_fact:
+    arch: "{{ architecture[ansible_architecture|lower] }}"
+
+- name: Install kernel modules
+  community.general.modprobe:
+    name: "{{item}}"
+    state: present
+  loop:
+  - overlay
+  - br_netfilter
+
+- name: Download CNI binaries release
+  ansible.builtin.get_url:
+    url: "https://github.com/containernetworking/plugins/releases/download/v{{cni_version}}/cni-plugins-{{ansible_system | lower}}-{{ arch }}-v{{cni_version}}.tgz"
+    dest: "/tmp/cni-plugins-{{ansible_system | lower}}-{{ arch }}-v{{cni_version}}.tgz"
+    force: false
+    mode: '0755'
+
+- name: Untar CNI binaries release
+  ansible.builtin.unarchive:
+    src: "/tmp/cni-plugins-{{ansible_system | lower}}-{{ arch }}-v{{cni_version}}.tgz"
+    dest: "/opt/cni/bin"
+    remote_src: true
+
+- set_fact:
+    ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_default_ipv4.address}}{% endif %}"
+
+- name: Copy conf
+  ansible.builtin.copy:
+    src: files/10-flannel.conflist
+    dest: /etc/cni/net.d/10-flannel.conflist
+    owner: root
+    group: root
+    mode: '0655'
+
+- name: Copy ETCD CA certificate
+  ansible.builtin.copy:
+    src: "/tmp/{{item.name}}"
+    dest: "{{item.path}}"
+    owner: root
+    group: root
+    mode: '0600'
+  loop:
+    - {name: etcd-ca.crt, path: /var/lib/kubernetes/etcd-ca.crt}
+    - {name: etcd-ca.key, path: /var/lib/kubernetes/etcd-ca.key}
+
+- name: Create etcd key for flannel
+  ansible.builtin.shell: |
+    openssl genrsa -out etcd-flannel.key 2048
+    chmod 600 etcd-flannel.key
+  args:
+    chdir: /var/lib/kubernetes
+    creates: /var/lib/kubernetes/etcd-flannel.key
+
+- name: Create etcd-flannel CSR config
+  ansible.builtin.template:
+    src: etcd.cnf.j2
+    dest: /tmp/etcd-flannel.cnf
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: Create etcd-flannel CSR
+  ansible.builtin.shell: "openssl req -new -key /var/lib/kubernetes/etcd-flannel.key -subj \"/CN=etcd-flannel\" -out etcd-flannel.csr -config etcd-flannel.cnf"
+  args:
+    chdir: /tmp
+
+- name: Create etcd-flannel certificate
+  ansible.builtin.shell: |
+    openssl x509 -req -in etcd-flannel.csr -CA /var/lib/kubernetes/etcd-ca.crt -CAkey /var/lib/kubernetes/etcd-ca.key -out /var/lib/kubernetes/etcd-flannel.crt -extensions v3_req -extfile etcd-flannel.cnf -days 365
+    chmod 600 /var/lib/kubernetes/etcd-flannel.crt
+  args:
+    chdir: /tmp

@@ -1,0 +1,5 @@
+flanneld_download_url: https://github.com/flannel-io/flannel/releases/download
+flannel_download_url: https://github.com/flannel-io/cni-plugin/releases/download
+flanneld_version: 0.26.1
+flannel_version: 1.6.0
+

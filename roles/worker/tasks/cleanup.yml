@@ -8,8 +8,8 @@
   loop:
   - "/tmp/kubernetes-node-{{ansible_system | lower}}-{{ arch }}.tar.gz"
   - /tmp/kubernetes
-  - /tmp/cni-plugins-{{ansible_system | lower}}-{{ arch }}-v{{cni_version}}.tgz
   - /tmp/kube-proxy.csr
   - /tmp/ca.key
   - "/tmp/{{ ansible_hostname }}.csr"
+  - "/tmp/containerd-{{ containerd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
   ignore_errors: true
