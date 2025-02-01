@@ -21,6 +21,7 @@
     - conntrack
     - curl
     - tar
+    - git
   ignore_errors: true
 
 - include_tasks: cni.yml

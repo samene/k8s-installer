@@ -50,3 +50,10 @@
   roles:
     - flannel
 
+- name: chart-install
+  hosts: control_plane[0]
+  any_errors_fatal: true
+  tags:
+    - charts
+  roles:
+    - charts

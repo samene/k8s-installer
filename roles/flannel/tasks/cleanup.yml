@@ -7,7 +7,7 @@
     state: absent
   loop:
   - "/tmp/flannel-v{{ flanneld_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-  - "/tmp/cni-plugin-flannel-{{ansible_system | lower}}-{{ arch }}-v{{ flannel_version }}-flannel1.tgz"
+  - "/tmp/cni-plugin-flannel-{{ansible_system | lower}}-{{ arch }}-v{{ flannel_version }}.tgz"
   - /tmp/flannel-{{ arch }}
   - /tmp/flanneld
   ignore_errors: true

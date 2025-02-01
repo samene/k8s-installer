@@ -5,6 +5,7 @@
   loop:
   - overlay
   - br_netfilter
+  - iscsi_tcp
 - name: Install kernel modules
   community.general.modprobe:
     name: "{{item}}"
@@ -56,7 +57,7 @@
 - block:
   - name: Install pre-requisite packages
     yum:
-      name: ['curl','ca-certificates','iscsi-initiator-utils','gpg','jq','tar']
+      name: ['curl','ca-certificates','iscsi-initiator-utils','gpg','jq','tar','nfs-utils']
       update_cache: yes
   - name: Enable iscsid
     systemd:

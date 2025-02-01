@@ -24,13 +24,13 @@
 - block:
   - name: Download flannel
     ansible.builtin.get_url:
-      url: "{{ flannel_download_url }}/v{{ flannel_version }}-flannel1/cni-plugin-flannel-{{ansible_system | lower}}-{{ arch }}-v{{ flannel_version }}-flannel1.tgz"
+      url: "{{ flannel_download_url }}/v{{ flannel_version }}/cni-plugin-flannel-{{ansible_system | lower}}-{{ arch }}-v{{ flannel_version }}.tgz"
       dest: "/tmp"
       force: false
       mode: '0755'
   - name: Untar flannel release
     ansible.builtin.unarchive:
-      src: "/tmp/cni-plugin-flannel-{{ansible_system | lower}}-{{ arch }}-v{{ flannel_version }}-flannel1.tgz"
+      src: "/tmp/cni-plugin-flannel-{{ansible_system | lower}}-{{ arch }}-v{{ flannel_version }}.tgz"
       dest: "/tmp"
       remote_src: true
     register: flannel_untar
@@ -68,5 +68,37 @@
     name: flanneld
     enabled: true
     state: started
+
+- block:
+
+  - name: Configure DNS (1/2)
+    lineinfile:
+      path: /etc/systemd/resolved.conf
+      regexp: '^DNS='
+      line: DNS=10.96.0.10 185.12.64.2 185.12.64.1
+    register: dns1
+  - name: Configure DNS (2/2)
+    lineinfile:
+      path: /etc/systemd/resolved.conf
+      regexp: '^Domains='
+      line: Domains=cluster.local
+    register: dns2
+  - name: Restart service
+    shell: "systemctl restart systemd-resolved.service"
+    when: dns1.changed or dns2.changed
+
+  when: "'control_plane' in group_names and ansible_os_family == 'Debian'"
+
+- block:
+
+  - name: Get connection UUID
+    shell: nmcli -t -f UUID con show --active | head -n 1
+    register: uuid
+  - name: Configure DNS entry
+    shell: "nmcli con mod {{ uuid.stdout }} ipv4.dns \"10.96.0.10 185.12.64.2 185.12.64.1\""
+  - name: Restart NetworkManager
+    shell: service NetworkManager restart
+
+  when: "'control_plane' in group_names and ansible_os_family == 'RedHat'"
 
 - include_tasks: cleanup.yml
