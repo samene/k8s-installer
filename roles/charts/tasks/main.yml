@@ -2,13 +2,13 @@
     arch: "{{ architecture[ansible_architecture|lower] }}"
 
 - name: Install k9s
-  shell: "curl -Lf https://github.com/derailed/k9s/releases/download/v0.32.7/k9s_{{ansible_system | lower}}_{{arch}}.tar.gz -o k9s.tar.gz && tar -xvf k9s.tar.gz && mv k9s /usr/local/bin/k9s"
+  shell: "curl -Lf https://github.com/derailed/k9s/releases/download/v{{ k9s_version }}/k9s_{{ansible_system | lower}}_{{arch}}.tar.gz -o k9s.tar.gz && tar -xvf k9s.tar.gz && mv k9s /usr/local/bin/k9s"
   args:
     creates: /usr/local/bin/k9s
   become: true
 
 - name: Install helmfile
-  shell: "curl -Lf https://github.com/helmfile/helmfile/releases/download/v0.162.0/helmfile_0.162.0_{{ansible_system | lower}}_{{arch}}.tar.gz -o helmfile.tar.gz && tar -xvf helmfile.tar.gz && chmod +x helmfile && mv helmfile /usr/local/bin/helmfile"
+  shell: "curl -Lf https://github.com/helmfile/helmfile/releases/download/v{{helmfile_version}}/helmfile_{{helmfile_version}}_{{ansible_system | lower}}_{{arch}}.tar.gz -o helmfile.tar.gz && tar -xvf helmfile.tar.gz && chmod +x helmfile && mv helmfile /usr/local/bin/helmfile"
   args:
     creates: /usr/local/bin/helmfile
   become: true
@@ -25,7 +25,7 @@
   - helmfile.yaml
 
 - name: Install local-path-provisioner
-  shell: "kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.26/deploy/local-path-storage.yaml"
+  shell: "kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v{{local_path_provisioner_version}}/deploy/local-path-storage.yaml"
 - name: Install Helm charts
   shell: "helmfile apply"
   args: 

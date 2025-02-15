@@ -56,7 +56,3 @@ releases:
   - name: persistence.defaultClassReplicaCount
     value: 1
 
-
-
-
-
