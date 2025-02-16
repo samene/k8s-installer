@@ -1,7 +1,10 @@
-etcd_version: 3.5.17
-kubernetes_version: 1.32.1
+etcd_version: 3.5.18
+kubernetes_version: 1.32.2
 containerd_version: 2.0.2
-runc_version: 1.2.4
-cni_version: 1.6.0
-flanneld_version: 0.26.3
-flannel_version: 1.6.0-flannel1
+runc_version: 1.2.5
+cni_version: 1.6.2
+flanneld_version: 0.26.4
+flannel_version: 1.6.2-flannel1
+k9s_version: 0.32.7
+helmfile_version: 0.171.0
+local_path_provisioner_version: 0.0.31
