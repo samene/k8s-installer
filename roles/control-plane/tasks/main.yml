@@ -38,6 +38,19 @@
       - kubectl
   when: not skip_download | default('false') | bool
 
+- block:
+  - name: Copy control plane binaries
+    ansible.builtin.copy:
+      src: "/data/kubernetes/{{ kubernetes_version }}/{{ arch }}/{{ item }}"
+      dest: "/usr/local/bin/{{item}}"
+      mode: '0755'
+    loop:
+      - kube-apiserver
+      - kube-controller-manager
+      - kube-scheduler
+      - kubectl
+  when: skip_download | default('false') | bool
+
 - set_fact:
     ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_default_ipv4.address}}{% endif %}"
 
@@ -103,7 +116,7 @@
   args:
     chdir: /tmp
 
-- name: Create controlplane client certificates
+- name: Create controlplane client certificates (1/2)
   ansible.builtin.shell: "openssl x509 -req -in {{item.name}}.csr -CA /var/lib/kubernetes/ca.crt -CAkey /var/lib/kubernetes/ca.key -out /var/lib/kubernetes/{{item.name}}.crt -extensions v3_req -days 365"
   args:
     chdir: /tmp
@@ -111,8 +124,14 @@
     - {name: kube-controller-manager}
     - {name: kube-scheduler}
     - {name: service-account}
-    - {name: front-proxy-client}
     - {name: admin}
+
+- name: Create controlplane client certificates (2/2)
+  ansible.builtin.shell: "openssl x509 -req -in {{item.name}}.csr -CA /var/lib/kubernetes/front-proxy-ca.crt -CAkey /var/lib/kubernetes/front-proxy-ca.key -out /var/lib/kubernetes/{{item.name}}.crt -extensions v3_req -days 365"
+  args:
+    chdir: /tmp
+  loop:
+    - {name: front-proxy-client}
 
 - name: Generate etcd encryption key
   ansible.builtin.shell: "head -c 32 /dev/urandom | base64"
@@ -214,7 +233,7 @@
   ansible.builtin.shell: |
     helm repo add coredns https://coredns.github.io/helm
     helm repo update
-    helm --namespace=kube-system upgrade --install coredns --set service.clusterIP=10.96.0.10 coredns/coredns
+    helm --namespace=kube-system upgrade --install coredns --version {{coredns_version}} --set service.clusterIP=10.96.0.10 coredns/coredns
   run_once: true
 
 - include_tasks: cleanup.yml

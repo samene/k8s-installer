@@ -63,6 +63,27 @@
       - kube-proxy
   when: not skip_download | default('false') | bool
 
+- block:
+  - name: Copy worker node binaries
+    ansible.builtin.copy:
+      src: "/data/kubernetes/{{ kubernetes_version }}/{{ arch }}/{{ item }}"
+      dest: "/usr/local/bin/{{item}}"
+      mode: '0755'
+    loop:
+      - kubelet
+      - kubectl
+  when: skip_download | default('false') | bool and "'worker' in group_names"
+
+- block:
+  - name: Copy worker node binaries
+    ansible.builtin.copy:
+      src: "/data/kubernetes/{{ kubernetes_version }}/{{ arch }}/{{ item }}"
+      dest: "/usr/local/bin/{{item}}"
+      mode: '0755'
+    loop:
+      - kube-proxy
+  when: skip_download | default('false') | bool
+
 - name: Copy CA certificates
   ansible.builtin.copy:
     src: "/tmp/{{item.name}}"

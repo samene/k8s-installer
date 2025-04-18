@@ -25,6 +25,5 @@
   ignore_errors: true
 
 - include_tasks: cni.yml
-  when: not skip_download | default('false') | bool
 
 - include_tasks: cleanup.yml

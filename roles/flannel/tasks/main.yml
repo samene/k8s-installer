@@ -19,7 +19,6 @@
       dest: "/usr/local/bin/flanneld"
       mode: '0755'
       remote_src: true
-  when: not skip_download | default('false') | bool
 
 - block:
   - name: Download flannel
@@ -40,7 +39,6 @@
       dest: "/opt/cni/bin/flannel"
       mode: '0755'
       remote_src: true
-  when: not skip_download | default('false') | bool
 
 - set_fact:
     etcd_cluster: "{% for host in groups['etcd'] %}https://{{hostvars[host]['ip_address']}}:2379{% if not loop.last %},{% endif %}{% endfor %}"

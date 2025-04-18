@@ -22,7 +22,6 @@
     loop:
       - etcd
       - etcdctl
-  when: not skip_download | default('false') | bool
 
 - name: Create etcd group
   ansible.builtin.group:

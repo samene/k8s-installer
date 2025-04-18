@@ -9,6 +9,8 @@ repositories:
   url: https://kubernetes-sigs.github.io/metrics-server
 - name: longhorn
   url: https://charts.longhorn.io
+- name: rancher
+  url: https://releases.rancher.com/server-charts/latest
 
 releases:
 - name: metrics-server
@@ -55,4 +57,16 @@ releases:
     value: 1
   - name: persistence.defaultClassReplicaCount
     value: 1
-
+- name: rancher
+  namespace: cattle-system
+  chart: rancher/rancher
+  set:
+  - name: bootstrapPassword
+    value: admin
+  - name: hostname
+    value: "rancher.{{loadbal_ip}}.nip.io"
+  - name: replicas
+    value: 1
+  needs:
+  - cert-manager/cert-manager
+  - ingress-nginx/ingress-nginx
