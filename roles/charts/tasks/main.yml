@@ -33,9 +33,14 @@
 - name: Install local-path-provisioner
   shell: "kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v{{local_path_provisioner_version}}/deploy/local-path-storage.yaml"
 - name: Install Helm charts
-  shell: "sleep 10 && helmfile apply -f {{item}}"
+  shell: "helmfile apply -f helmfile-1.yaml.j2"
   args: 
     chdir: /tmp
-  loop:
-  - helmfile-1.yaml.j2
-  - helmfile-2.yaml.j2
+
+- name: Wait for ingress
+  shell: "kubectl -n ingress-nginx rollout status deployment/ingress-nginx-controller"
+
+- name: Install Helm charts
+  shell: "helmfile apply -f helmfile-2.yaml.j2"
+  args:
+    chdir: /tmp

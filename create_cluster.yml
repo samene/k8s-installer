@@ -34,7 +34,7 @@
   roles:
     - worker
 
-- name: post-install
+- name: post-install-flannel
   hosts: etcd[0]
   any_errors_fatal: true
   become: true
@@ -42,15 +42,27 @@
   - post-install
   tasks:
   - shell: "etcdctl --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key --cacert=/etc/kubernetes/pki/etcd/ca.crt --insecure-skip-tls-verify put /coreos.com/network/config '{ \"Network\": \"10.244.0.0/16\", \"Backend\": {\"Type\": \"vxlan\"}}'"
+    when: cni == "flannel"
 
-- name: post-install
+- name: install-cni-flannel
   hosts: all
   any_errors_fatal: true
   become: true
   tags:
     - post-install
   roles:
-    - flannel
+    - role: flannel
+      when: cni == "flannel"
+
+- name: install-cni-cilium
+  hosts: control_plane[0]
+  any_errors_fatal: true
+  become: true
+  tags:
+    - post-install
+  roles:
+    - role: cilium
+      when: cni == "cilium"
 
 - name: chart-install
   hosts: control_plane[0]

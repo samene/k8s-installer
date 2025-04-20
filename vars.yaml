@@ -10,3 +10,5 @@ helmfile_version: 0.171.0
 local_path_provisioner_version: 0.0.31
 coredns_version: 1.39.2
 skip_download: false
+
+cni: cilium

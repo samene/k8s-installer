@@ -25,5 +25,6 @@
   ignore_errors: true
 
 - include_tasks: cni.yml
+  when: cni == "flannel"
 
 - include_tasks: cleanup.yml

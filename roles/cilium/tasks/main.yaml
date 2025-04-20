@@ -1,0 +1,15 @@
+- name: add cilium repo
+  shell: "helm repo add cilium https://helm.cilium.io/ && helm repo update"
+
+- set_fact:
+    cp_endpoint: "{% if hostvars[groups['control_plane'][0]]['loadbalancer_int_ip'] is defined %}{{hostvars[groups['control_plane'][0]]['loadbalancer_int_ip']}}{% else %}{{hostvars[groups['control_plane'][0]]['internal_ip']}}{% endif %}"
+
+- name: Copy helmfile
+  ansible.builtin.template:
+    src: "cilium-values.yaml.j2"
+    dest: "/tmp/cilium-values.yaml.j2"
+
+- name: Install cilium
+  shell: "helm upgrade --install cilium cilium/cilium --namespace kube-system -f /tmp/cilium-values.yaml.j2"
+
+
