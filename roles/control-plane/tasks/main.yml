@@ -60,74 +60,99 @@
     dest: "{{item.path}}"
     mode: '0600'
   loop:
-    - {name: ca.crt, path: /var/lib/kubernetes/ca.crt}
-    - {name: ca.key, path: /var/lib/kubernetes/ca.key}
-    - {name: front-proxy-ca.crt, path: /var/lib/kubernetes/front-proxy-ca.crt}
-    - {name: front-proxy-ca.key, path: /var/lib/kubernetes/front-proxy-ca.key}
+    - {name: ca.crt, path: /etc/kubernetes/pki/ca.crt}
+    - {name: ca.key, path: /etc/kubernetes/pki/ca.key}
+    - {name: front-proxy-ca.crt, path: /etc/kubernetes/pki/front-proxy-ca.crt}
+    - {name: front-proxy-ca.key, path: /etc/kubernetes/pki/front-proxy-ca.key}
     - {name: etcd-ca.crt, path: /tmp/etcd-ca.crt}
     - {name: etcd-ca.key, path: /tmp/etcd-ca.key}
 
-- name: Create control plane component keys
+- name: Create control plane component keys (1/2)
   ansible.builtin.shell: "openssl genrsa -out {{item.name}}.key 2048"
   args:
-    chdir: /var/lib/kubernetes
-    creates: /var/lib/kubernetes/{{item.name}}.key
+    chdir: /etc/kubernetes/pki
+    creates: /etc/kubernetes/pki/{{item.name}}.key
   loop:
     - {name: apiserver-etcd-client}  
-    - {name: kube-api}
-    - {name: kube-controller-manager}
-    - {name: kube-scheduler}
+    - {name: apiserver}
+    - {name: apiserver-kubelet-client}
     - {name: front-proxy-client}
-    - {name: service-account}
+    - {name: sa}
+
+- name: Create control plane component keys (2/2)
+  ansible.builtin.shell: "openssl genrsa -out {{item.name}}.key 2048"
+  args:
+    chdir: /tmp
+    creates: /tmp/{{item.name}}.key
+  loop:
+    - {name: controller-manager}
+    - {name: scheduler}
     - {name: admin}
 
 - name: Create kube-apiserver CSR config
   ansible.builtin.template:
     src: kube-api.cnf.j2
-    dest: /tmp/kube-api.cnf
+    dest: /tmp/apiserver.cnf
     mode: '0644'
     owner: root
     group: root
 
-- name: Create kube-apiserver CSR
-  ansible.builtin.shell: "openssl req -new -key /var/lib/kubernetes/kube-api.key -subj \"/CN=kube-apiserver\" -out kube-api.csr -config kube-api.cnf"
+- name: Create apiserver CSR
+  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/apiserver.key -subj \"/CN=kube-apiserver\" -out apiserver.csr -config apiserver.cnf"
   args:
     chdir: /tmp
 
-- name: Create controlplane client certificates csr
-  ansible.builtin.shell: "openssl req -new -key /var/lib/kubernetes/{{item.name}}.key -subj \"{{item.subject}}\" -out {{item.name}}.csr"
+- name: Create controlplane client certificates csr (1/2)
+  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/{{item.name}}.key -subj \"{{item.subject}}\" -out {{item.name}}.csr"
   args:
     chdir: /tmp
   loop:
     - {name: apiserver-etcd-client, subject: '/CN=kube-apiserver-etcd-client'}
-    - {name: kube-controller-manager, subject: '/CN=system:kube-controller-manager'}
-    - {name: kube-scheduler, subject: '/CN=system:kube-scheduler'}
-    - {name: service-account, subject: '/CN=service-accounts'}
+    - {name: apiserver-kubelet-client, subject: '/CN=kube-apiserver-kubelet-client/O=system:masters'}
+    - {name: sa, subject: '/CN=service-accounts'}
     - {name: front-proxy-client, subject: '/CN=front-proxy-client'}
+
+- name: Create controlplane client certificates csr (2/2)
+  ansible.builtin.shell: "openssl req -new -key /tmp/{{item.name}}.key -subj \"{{item.subject}}\" -out {{item.name}}.csr"
+  args:
+    chdir: /tmp
+  loop:
+    - {name: controller-manager, subject: '/CN=system:kube-controller-manager'}
+    - {name: scheduler, subject: '/CN=system:kube-scheduler'}
     - {name: admin, subject: '/CN=admin/O=system:masters'}
 
-- name: Create kube-apiserver server certificate
-  ansible.builtin.shell: "openssl x509 -req -in kube-api.csr -CA /var/lib/kubernetes/ca.crt -CAkey /var/lib/kubernetes/ca.key -out /var/lib/kubernetes/kube-api.crt -extensions v3_req -extfile kube-api.cnf -days 365"
+- name: Create apiserver server certificate
+  ansible.builtin.shell: "openssl x509 -req -in apiserver.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -out /etc/kubernetes/pki/apiserver.crt -extensions v3_req -extfile apiserver.cnf -days 365 && chmod 600 /etc/kubernetes/pki/apiserver.crt"
   args:
     chdir: /tmp
 
-- name: Create kube-apiserver-etcd-client certificate
-  ansible.builtin.shell: "openssl x509 -req -in apiserver-etcd-client.csr -CA /tmp/etcd-ca.crt -CAkey /tmp/etcd-ca.key -out /var/lib/kubernetes/apiserver-etcd-client.crt -extensions v3_req -days 365"
+- name: Create apiserver-etcd-client certificate
+  ansible.builtin.shell: "openssl x509 -req -in apiserver-etcd-client.csr -CA /tmp/etcd-ca.crt -CAkey /tmp/etcd-ca.key -out /etc/kubernetes/pki/apiserver-etcd-client.crt -extensions v3_req -days 365 && chmod 600 /etc/kubernetes/pki/apiserver-etcd-client.crt"
+  args:
+    chdir: /tmp
+
+- name: Create apiserver-kubelet-client certificate
+  ansible.builtin.shell: "openssl x509 -req -in apiserver-kubelet-client.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -out /etc/kubernetes/pki/apiserver-kubelet-client.crt -extensions v3_req -days 365 && chmod 600 /etc/kubernetes/pki/apiserver-kubelet-client.crt"
+  args:
+    chdir: /tmp
+
+- name: Create service-account certificate
+  ansible.builtin.shell: "openssl x509 -req -in sa.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -out /etc/kubernetes/pki/sa.pub -extensions v3_req -days 365 && chmod 600 /etc/kubernetes/pki/sa.pub"
   args:
     chdir: /tmp
 
 - name: Create controlplane client certificates (1/2)
-  ansible.builtin.shell: "openssl x509 -req -in {{item.name}}.csr -CA /var/lib/kubernetes/ca.crt -CAkey /var/lib/kubernetes/ca.key -out /var/lib/kubernetes/{{item.name}}.crt -extensions v3_req -days 365"
+  ansible.builtin.shell: "openssl x509 -req -in {{item.name}}.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -out /tmp/{{item.name}}.crt -extensions v3_req -days 365"
   args:
     chdir: /tmp
   loop:
-    - {name: kube-controller-manager}
-    - {name: kube-scheduler}
-    - {name: service-account}
+    - {name: controller-manager}
+    - {name: scheduler}
+    - {name: sa}
     - {name: admin}
 
 - name: Create controlplane client certificates (2/2)
-  ansible.builtin.shell: "openssl x509 -req -in {{item.name}}.csr -CA /var/lib/kubernetes/front-proxy-ca.crt -CAkey /var/lib/kubernetes/front-proxy-ca.key -out /var/lib/kubernetes/{{item.name}}.crt -extensions v3_req -days 365"
+  ansible.builtin.shell: "openssl x509 -req -in {{item.name}}.csr -CA /etc/kubernetes/pki/front-proxy-ca.crt -CAkey /etc/kubernetes/pki/front-proxy-ca.key -out /etc/kubernetes/pki/{{item.name}}.crt -extensions v3_req -days 365 && chmod 600 /etc/kubernetes/pki/{{item.name}}.crt"
   args:
     chdir: /tmp
   loop:
@@ -141,43 +166,43 @@
 - name: Create etcd encryption config
   ansible.builtin.template:
     src: encryption-config.yaml.j2
-    dest: /var/lib/kubernetes/encryption-at-rest.yaml
-    mode: '0644'
+    dest: /etc/kubernetes/encryption-at-rest.yaml
+    mode: '0600'
     owner: root
     group: root
     force: false
 
 - name: Generate Kubeconfigs (1/4)
-  ansible.builtin.shell: "kubectl config set-cluster kubernetes --certificate-authority=/var/lib/kubernetes/ca.crt --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig=/var/lib/kubernetes/{{item}}.kubeconfig"
+  ansible.builtin.shell: "kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/pki/ca.crt --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig=/etc/kubernetes/{{item}}.conf"
   loop:
-    - kube-controller-manager
-    - kube-scheduler
+    - controller-manager
+    - scheduler
     - admin
 
 - name: Generate Kubeconfigs (2/4)
-  ansible.builtin.shell: "kubectl config set-credentials {{item.group}} --client-certificate=/var/lib/kubernetes/{{item.name}}.crt --client-key=/var/lib/kubernetes/{{item.name}}.key --embed-certs=true --kubeconfig=/var/lib/kubernetes/{{item.name}}.kubeconfig"
+  ansible.builtin.shell: "kubectl config set-credentials {{item.group}} --client-certificate=/tmp/{{item.name}}.crt --client-key=/tmp/{{item.name}}.key --embed-certs=true --kubeconfig=/etc/kubernetes/{{item.name}}.conf"
   loop:
-    - {name: kube-controller-manager, group: system:kube-controller-manager}
-    - {name: kube-scheduler, group: system:kube-scheduler}
+    - {name: controller-manager, group: system:kube-controller-manager}
+    - {name: scheduler, group: system:kube-scheduler}
     - {name: admin, group: admin}
 
 - name: Generate Kubeconfigs (3/4)
-  ansible.builtin.shell: "kubectl config set-context default --cluster=kubernetes --user={{item.group}} --kubeconfig=/var/lib/kubernetes/{{item.name}}.kubeconfig"
+  ansible.builtin.shell: "kubectl config set-context default --cluster=kubernetes --user={{item.group}} --kubeconfig=/etc/kubernetes/{{item.name}}.conf"
   loop:
-    - {name: kube-controller-manager, group: system:kube-controller-manager}
-    - {name: kube-scheduler, group: system:kube-scheduler}
+    - {name: controller-manager, group: system:kube-controller-manager}
+    - {name: scheduler, group: system:kube-scheduler}
     - {name: admin, group: admin}
 
 - name: Generate Kubeconfigs (4/4)
-  ansible.builtin.shell: "kubectl config use-context default --kubeconfig=/var/lib/kubernetes/{{item}}.kubeconfig"
+  ansible.builtin.shell: "kubectl config use-context default --kubeconfig=/etc/kubernetes/{{item}}.conf"
   loop:
-    - kube-controller-manager
-    - kube-scheduler
+    - controller-manager
+    - scheduler
     - admin
 
 - name: Move admin kubeconfig
   ansible.builtin.copy:
-    src: /var/lib/kubernetes/admin.kubeconfig
+    src: /etc/kubernetes/admin.conf
     dest: "{{ansible_env.HOME}}/.kube/config"
     mode: '0644'
     remote_src: true

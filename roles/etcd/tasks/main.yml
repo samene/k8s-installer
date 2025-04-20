@@ -46,7 +46,7 @@
     group: etcd
   loop:
     - /var/lib/etcd
-    - /etc/etcd
+    - /etc/kubernetes/pki/etcd
 
 - set_fact:
     ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_default_ipv4.address}}{% endif %}"
@@ -61,19 +61,19 @@
     group: etcd
     mode: '0600'
   loop:
-    - {name: etcd-ca.crt, path: /etc/etcd/ca.crt}
-    - {name: etcd-ca.key, path: /etc/etcd/ca.key}
+    - {name: etcd-ca.crt, path: /etc/kubernetes/pki/etcd/ca.crt}
+    - {name: etcd-ca.key, path: /etc/kubernetes/pki/etcd/ca.key}
 
-- name: Create etcd key
+- name: Create etcd server key
   ansible.builtin.shell: |
-    openssl genrsa -out etcd.key 2048
-    chown etcd:etcd etcd.key
-    chmod 600 etcd.key
+    openssl genrsa -out server.key 2048
+    chown etcd:etcd server.key
+    chmod 600 server.key
   args:
-    chdir: /etc/etcd
-    creates: /etc/etcd/etcd.key
+    chdir: /etc/kubernetes/pki/etcd
+    creates: /etc/kubernetes/pki/etcd/server.key
 
-- name: Create etcd CSR config
+- name: Create etcd server CSR config
   ansible.builtin.template:
     src: etcd.cnf.j2
     dest: /tmp/etcd.cnf
@@ -81,23 +81,45 @@
     owner: root
     group: root
 
-- name: Create etcd CSR
-  ansible.builtin.shell: "openssl req -new -key /etc/etcd/etcd.key -subj \"/CN=etcd\" -out etcd.csr -config etcd.cnf"
+- name: Create etcd server CSR
+  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/etcd/server.key -subj \"/CN=kube-etcd\" -out etcd.csr -config etcd.cnf"
   args:
     chdir: /tmp
 
-- name: Create etcd certificate
+- name: Create etcd server certificate
   ansible.builtin.shell: |
-    openssl x509 -req -in etcd.csr -CA /etc/etcd/ca.crt -CAkey /etc/etcd/ca.key -out /etc/etcd/etcd.crt -extensions v3_req -extfile etcd.cnf -days 365
-    chown etcd:etcd /etc/etcd/etcd.crt
-    chmod 600 /etc/etcd/etcd.crt
+    openssl x509 -req -in etcd.csr -CA /etc/kubernetes/pki/etcd/ca.crt -CAkey /etc/kubernetes/pki/etcd/ca.key -out /etc/kubernetes/pki/etcd/server.crt -extensions v3_req -extfile etcd.cnf -days 365
+    chown etcd:etcd /etc/kubernetes/pki/etcd/server.crt
+    chmod 600 /etc/kubernetes/pki/etcd/server.crt
+  args:
+    chdir: /tmp
+
+- name: Create etcd peer key
+  ansible.builtin.shell: |
+    openssl genrsa -out peer.key 2048
+    chown etcd:etcd peer.key
+    chmod 600 peer.key
+  args:
+    chdir: /etc/kubernetes/pki/etcd
+    creates: /etc/kubernetes/pki/etcd/peer.key
+
+- name: Create etcd peer CSR
+  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/etcd/peer.key -subj \"/CN=kube-etcd-peer\" -out peer.csr -config etcd.cnf"
+  args:
+    chdir: /tmp
+
+- name: Create etcd peer certificate
+  ansible.builtin.shell: |
+    openssl x509 -req -in peer.csr -CA /etc/kubernetes/pki/etcd/ca.crt -CAkey /etc/kubernetes/pki/etcd/ca.key -out /etc/kubernetes/pki/etcd/peer.crt -extensions v3_req -extfile etcd.cnf -days 365
+    chown etcd:etcd /etc/kubernetes/pki/etcd/peer.crt
+    chmod 600 /etc/kubernetes/pki/etcd/peer.crt
   args:
     chdir: /tmp
 
 - name: Create etcd config file
   ansible.builtin.template:
     src: etcd-config.yml.j2
-    dest: /etc/etcd/etcd-config.yml
+    dest: /etc/kubernetes/etcd-config.yml
     mode: '0644'
     owner: root
     group: root

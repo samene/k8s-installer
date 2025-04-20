@@ -7,7 +7,7 @@
     group: root
   become: true
   loop:
-    - /var/lib/kubernetes
+    - /etc/kubernetes/pki/etcd
     - /opt/cni/bin
     - /etc/cni/net.d
 

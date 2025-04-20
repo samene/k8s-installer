@@ -57,16 +57,3 @@ releases:
     value: 1
   - name: persistence.defaultClassReplicaCount
     value: 1
-- name: rancher
-  namespace: cattle-system
-  chart: rancher/rancher
-  set:
-  - name: bootstrapPassword
-    value: admin
-  - name: hostname
-    value: "rancher.{{loadbal_ip}}.nip.io"
-  - name: replicas
-    value: 1
-  needs:
-  - cert-manager/cert-manager
-  - ingress-nginx/ingress-nginx

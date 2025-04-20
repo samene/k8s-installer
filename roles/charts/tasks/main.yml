@@ -17,8 +17,11 @@
   shell: helm plugin list | grep diff || helm plugin install https://github.com/databus23/helm-diff
 - name: Copy helmfile
   ansible.builtin.template:
-    src: helmfile.yaml.j2
-    dest: /tmp/helmfile.yaml
+    src: "{{item}}"
+    dest: "/tmp/{{item}}"
+  loop:
+  - helmfile-1.yaml.j2
+  - helmfile-2.yaml.j2
 - name: Copy values files
   copy:
     src: "./files/{{item}}"
@@ -30,6 +33,9 @@
 - name: Install local-path-provisioner
   shell: "kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v{{local_path_provisioner_version}}/deploy/local-path-storage.yaml"
 - name: Install Helm charts
-  shell: "helmfile sync"
+  shell: "sleep 10 && helmfile apply -f {{item}}"
   args: 
     chdir: /tmp
+  loop:
+  - helmfile-1.yaml.j2
+  - helmfile-2.yaml.j2

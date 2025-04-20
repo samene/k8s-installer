@@ -8,14 +8,22 @@
   loop:
   - "/tmp/kubernetes-server-{{ansible_system | lower}}-{{ arch }}.tar.gz"
   - /tmp/kubernetes
-  - /tmp/kube-api.cnf
+  - /tmp/apiserver.cnf
   - /tmp/apiserver-etcd-client.csr
-  - /tmp/kube-api.csr
-  - /tmp/kube-controller-manager.csr
-  - /tmp/kube-scheduler.csr
-  - /tmp/service-account.csr
+  - /tmp/apiserver-kubelet-client.csr
+  - /tmp/apiserver.csr
+  - /tmp/controller-manager.csr
+  - /tmp/scheduler.csr
+  - /tmp/sa.csr
   - /tmp/front-proxy-client.csr
   - /tmp/admin.csr
+  - /tmp/controller-manager.crt
+  - /tmp/scheduler.crt
+  - /tmp/admin.key
+  - /tmp/controller-manager.key
+  - /tmp/scheduler.key
+  - /tmp/sa.crt
+  - /tmp/admin.crt
   - /tmp/etcd-ca.crt
   - /tmp/etcd-ca.key
   - /tmp/rbac.yaml

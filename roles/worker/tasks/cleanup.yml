@@ -9,7 +9,8 @@
   - "/tmp/kubernetes-node-{{ansible_system | lower}}-{{ arch }}.tar.gz"
   - /tmp/kubernetes
   - /tmp/kube-proxy.csr
-  - /tmp/ca.key
+  - /tmp/ca.ke
+  - /tmp/runc.amd64
   - "/tmp/{{ ansible_hostname }}.csr"
   - "/tmp/containerd-{{ containerd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
   ignore_errors: true

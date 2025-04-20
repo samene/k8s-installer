@@ -3,7 +3,7 @@ Description=etcd
 Documentation=https://github.com/coreos
 
 [Service]
-ExecStart=/usr/local/bin/etcd --config-file /etc/etcd/etcd-config.yml
+ExecStart=/usr/local/bin/etcd --config-file /etc/kubernetes/etcd-config.yml
 Restart=on-failure
 RestartSec=5
 User=etcd

@@ -2,15 +2,15 @@ name: etcd-{{ansible_hostname}}
 data-dir: /var/lib/etcd
 
 client-transport-security:
-  cert-file: /etc/etcd/etcd.crt
-  key-file: /etc/etcd/etcd.key
-  trusted-ca-file: /etc/etcd/ca.crt
+  cert-file: /etc/kubernetes/pki/etcd/server.crt
+  key-file: /etc/kubernetes/pki/etcd/server.key
+  trusted-ca-file: /etc/kubernetes/pki/etcd/ca.crt
   client-cert-auth: true
   auto-tls: false
 peer-transport-security:
-  cert-file: /etc/etcd/etcd.crt
-  key-file: /etc/etcd/etcd.key
-  trusted-ca-file: /etc/etcd/ca.crt
+  cert-file: /etc/kubernetes/pki/etcd/peer.crt
+  key-file: /etc/kubernetes/pki/etcd/peer.key
+  trusted-ca-file: /etc/kubernetes/pki/etcd/ca.crt
   client-cert-auth: true
   auto-tls: false
 

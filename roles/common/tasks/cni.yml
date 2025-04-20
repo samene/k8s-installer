@@ -41,16 +41,16 @@
     group: root
     mode: '0600'
   loop:
-    - {name: etcd-ca.crt, path: /var/lib/kubernetes/etcd-ca.crt}
-    - {name: etcd-ca.key, path: /var/lib/kubernetes/etcd-ca.key}
+    - {name: etcd-ca.crt, path: /etc/kubernetes/pki/etcd/ca.crt}
+    - {name: etcd-ca.key, path: /etc/kubernetes/pki/etcd/ca.key}
 
 - name: Create etcd key for flannel
   ansible.builtin.shell: |
     openssl genrsa -out etcd-flannel.key 2048
     chmod 600 etcd-flannel.key
   args:
-    chdir: /var/lib/kubernetes
-    creates: /var/lib/kubernetes/etcd-flannel.key
+    chdir: /etc/kubernetes/pki
+    creates: /etc/kubernetes/pki/etcd-flannel.key
 
 - name: Create etcd-flannel CSR config
   ansible.builtin.template:
@@ -61,13 +61,13 @@
     group: root
 
 - name: Create etcd-flannel CSR
-  ansible.builtin.shell: "openssl req -new -key /var/lib/kubernetes/etcd-flannel.key -subj \"/CN=etcd-flannel\" -out etcd-flannel.csr -config etcd-flannel.cnf"
+  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/etcd-flannel.key -subj \"/CN=etcd-flannel\" -out etcd-flannel.csr -config etcd-flannel.cnf"
   args:
     chdir: /tmp
 
 - name: Create etcd-flannel certificate
   ansible.builtin.shell: |
-    openssl x509 -req -in etcd-flannel.csr -CA /var/lib/kubernetes/etcd-ca.crt -CAkey /var/lib/kubernetes/etcd-ca.key -out /var/lib/kubernetes/etcd-flannel.crt -extensions v3_req -extfile etcd-flannel.cnf -days 365
-    chmod 600 /var/lib/kubernetes/etcd-flannel.crt
+    openssl x509 -req -in etcd-flannel.csr -CA /etc/kubernetes/pki/etcd/ca.crt -CAkey /etc/kubernetes/pki/etcd/ca.key -out /etc/kubernetes/pki/etcd-flannel.crt -extensions v3_req -extfile etcd-flannel.cnf -days 365
+    chmod 600 /etc/kubernetes/pki/etcd-flannel.crt
   args:
     chdir: /tmp

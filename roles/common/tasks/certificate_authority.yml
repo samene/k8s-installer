@@ -21,9 +21,9 @@
       creates: /tmp/{{item.name}}.csr
   run_once: true
   loop:
-    - {name: ca, subject: "/CN=KUBERNETES-CA"}
-    - {name: etcd-ca, subject: "/CN=ETCD-CA"}
-    - {name: front-proxy-ca, subject: "/CN=FRONT-PROXY-CA"}
+    - {name: ca, subject: "/CN=kubernetes-ca"}
+    - {name: etcd-ca, subject: "/CN=etcd-ca"}
+    - {name: front-proxy-ca, subject: "/CN=kubernetes-front-proxy-ca"}
 
 - name: Self sign CSR
   local_action:

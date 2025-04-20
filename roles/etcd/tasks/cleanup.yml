@@ -10,4 +10,5 @@
   - "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}"
   - /tmp/etcd.cnf
   - /tmp/etcd.csr
+  - /tmp/peer.csr
   ignore_errors: true
