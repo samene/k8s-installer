@@ -1,0 +1,167 @@
+[admin]
+distinguished_name = admin_distinguished_name
+prompt             = no
+req_extensions     = default_req_extensions
+
+[admin_distinguished_name]
+CN = admin
+O  = system:masters
+
+# ----------------------------------------------
+
+[service-accounts]
+distinguished_name = service-accounts_distinguished_name
+prompt             = no
+req_extensions     = default_req_extensions
+
+[service-accounts_distinguished_name]
+CN = service-accounts
+
+# ----------------------------------------------
+
+[kube-controller-manager]
+distinguished_name = kube-controller-manager_distinguished_name
+prompt             = no
+req_extensions     = kube-controller-manager_req_extensions
+
+[kube-controller-manager_req_extensions]
+basicConstraints     = CA:FALSE
+extendedKeyUsage     = clientAuth, serverAuth
+keyUsage             = critical, digitalSignature, keyEncipherment
+nsCertType           = client
+nsComment            = "Kube Controller Manager Certificate"
+subjectAltName       = DNS:kube-controller-manager, IP:127.0.0.1
+subjectKeyIdentifier = hash
+
+[kube-controller-manager_distinguished_name]
+CN = system:kube-controller-manager
+O  = system:kube-controller-manager
+C  = IN
+ST = Maharashtra
+L  = Pune
+
+# ----------------------------------------------
+
+[kube-scheduler]
+distinguished_name = kube-scheduler_distinguished_name
+prompt             = no
+req_extensions     = kube-scheduler_req_extensions
+
+[kube-scheduler_req_extensions]
+basicConstraints     = CA:FALSE
+extendedKeyUsage     = clientAuth, serverAuth
+keyUsage             = critical, digitalSignature, keyEncipherment
+nsCertType           = client
+nsComment            = "Kube Scheduler Certificate"
+subjectAltName       = DNS:kube-scheduler, IP:127.0.0.1
+subjectKeyIdentifier = hash
+
+[kube-scheduler_distinguished_name]
+CN = system:kube-scheduler
+O  = system:system:kube-scheduler
+C  = IN
+ST = Maharashtra
+L  = Pune
+
+# ----------------------------------------------
+
+[kube-api-server]
+distinguished_name = kube-api-server_distinguished_name
+prompt             = no
+req_extensions     = kube-api-server_req_extensions
+
+[kube-api-server_req_extensions]
+basicConstraints     = CA:FALSE
+extendedKeyUsage     = clientAuth, serverAuth
+keyUsage             = critical, digitalSignature, keyEncipherment
+nsCertType           = client, server
+nsComment            = "Kube API Server Certificate"
+subjectAltName       = @kube-api-server_alt_names
+subjectKeyIdentifier = hash
+
+[kube-api-server_alt_names]
+DNS.1 = kubernetes
+DNS.2 = kubernetes.default
+DNS.3 = kubernetes.default.svc
+DNS.4 = kubernetes.default.svc.cluster.local
+IP.1 = 127.0.0.1
+IP.2 = {{ip_address}}
+IP.3 = {{ansible_default_ipv4.address}}
+IP.4 = {{inventory_hostname}}
+IP.5 = 10.96.0.1
+{% if loadbalancer_ext_ip is defined %}
+IP.6 = {{loadbalancer_ext_ip}}
+IP.7 = {{loadbalancer_int_ip}}
+{% endif %}
+
+[kube-api-server_distinguished_name]
+CN = kube-apiserver
+C  = IN
+ST = Maharashtra
+L  = Pune
+
+# ----------------------------------------------
+
+[apiserver-etcd-client]
+distinguished_name = apiserver-etcd-client_distinguished_name
+prompt             = no
+req_extensions     = apiserver-etcd-client_req_extensions
+
+[apiserver-etcd-client_distinguished_name]
+CN = kube-apiserver-etcd-client
+
+[apiserver-etcd-client_req_extensions]
+basicConstraints     = CA:FALSE
+extendedKeyUsage     = clientAuth, serverAuth
+keyUsage             = critical, digitalSignature, keyEncipherment
+nsCertType           = client
+nsComment            = "Kube API Server Etcd Client Certificate"
+subjectKeyIdentifier = hash
+
+# ----------------------------------------------
+
+[apiserver-kubelet-client]
+distinguished_name = apiserver-kubelet-client_distinguished_name
+prompt             = no
+req_extensions     = apiserver-kubelet-client_req_extensions
+
+[apiserver-kubelet-client_distinguished_name]
+CN = kube-apiserver-kubelet-client
+O = system:masters
+
+[apiserver-kubelet-client_req_extensions]
+basicConstraints     = CA:FALSE
+extendedKeyUsage     = clientAuth, serverAuth
+keyUsage             = critical, digitalSignature, keyEncipherment
+nsCertType           = client
+nsComment            = "Kube API Server Kubelet Client Certificate"
+subjectKeyIdentifier = hash
+
+# ----------------------------------------------
+
+[front-proxy-client]
+distinguished_name = front-proxy-client_distinguished_name
+prompt             = no
+req_extensions     = front-proxy-client_req_extensions
+
+[front-proxy-client_distinguished_name]
+CN = front-proxy-client
+
+[front-proxy-client_req_extensions]
+basicConstraints     = CA:FALSE
+extendedKeyUsage     = clientAuth, serverAuth
+keyUsage             = critical, digitalSignature, keyEncipherment
+nsCertType           = client
+nsComment            = "Front Proxy Client Certificate"
+subjectKeyIdentifier = hash
+
+# ----------------------------------------------
+
+[default_req_extensions]
+basicConstraints     = CA:FALSE
+extendedKeyUsage     = clientAuth
+keyUsage             = critical, digitalSignature, keyEncipherment
+nsCertType           = client
+nsComment            = "Admin Client Certificate"
+subjectKeyIdentifier = hash
+

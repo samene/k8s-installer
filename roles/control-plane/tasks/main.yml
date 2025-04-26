@@ -56,7 +56,7 @@
 
 - name: Copy CA certificates
   ansible.builtin.copy:
-    src: "/tmp/{{item.name}}"
+    src: "/{{tmp_folder}}/{{item.name}}"
     dest: "{{item.path}}"
     mode: '0600'
   loop:
@@ -68,95 +68,59 @@
     - {name: etcd-ca.key, path: /tmp/etcd-ca.key}
 
 - name: Create control plane component keys (1/2)
-  ansible.builtin.shell: "openssl genrsa -out {{item.name}}.key 2048"
+  ansible.builtin.shell: "openssl genrsa -out {{item.folder}}/{{item.name}}.key 4096"
   args:
-    chdir: /etc/kubernetes/pki
-    creates: /etc/kubernetes/pki/{{item.name}}.key
+    creates: "{{item.folder}}/{{item.name}}.key"
   loop:
-    - {name: apiserver-etcd-client}  
-    - {name: apiserver}
-    - {name: apiserver-kubelet-client}
-    - {name: front-proxy-client}
-    - {name: sa}
+    - {name: apiserver-etcd-client, folder: /etc/kubernetes/pki}
+    - {name: apiserver, folder: /etc/kubernetes/pki}
+    - {name: apiserver-kubelet-client, folder: /etc/kubernetes/pki}
+    - {name: front-proxy-client, folder: /etc/kubernetes/pki}
+    - {name: sa, folder: /etc/kubernetes/pki}
+    - {name: controller-manager, folder: /tmp}
+    - {name: scheduler, folder: /tmp}
+    - {name: admin, folder: /tmp}
 
-- name: Create control plane component keys (2/2)
-  ansible.builtin.shell: "openssl genrsa -out {{item.name}}.key 2048"
-  args:
-    chdir: /tmp
-    creates: /tmp/{{item.name}}.key
-  loop:
-    - {name: controller-manager}
-    - {name: scheduler}
-    - {name: admin}
-
-- name: Create kube-apiserver CSR config
+- name: Create all CSR configs
   ansible.builtin.template:
-    src: kube-api.cnf.j2
-    dest: /tmp/apiserver.cnf
+    src: control-plane.conf.j2
+    dest: /tmp/control-plane.conf
     mode: '0644'
     owner: root
     group: root
 
-- name: Create apiserver CSR
-  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/apiserver.key -subj \"/CN=kube-apiserver\" -out apiserver.csr -config apiserver.cnf"
-  args:
-    chdir: /tmp
-
-- name: Create controlplane client certificates csr (1/2)
-  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/{{item.name}}.key -subj \"{{item.subject}}\" -out {{item.name}}.csr"
+- name: Create all CSR
+  ansible.builtin.shell: "openssl req -new -key {{item.path}} -out {{item.section}}.csr -config control-plane.conf -section {{item.section}}"
   args:
     chdir: /tmp
   loop:
-    - {name: apiserver-etcd-client, subject: '/CN=kube-apiserver-etcd-client'}
-    - {name: apiserver-kubelet-client, subject: '/CN=kube-apiserver-kubelet-client/O=system:masters'}
-    - {name: sa, subject: '/CN=service-accounts'}
-    - {name: front-proxy-client, subject: '/CN=front-proxy-client'}
+    - {path: /etc/kubernetes/pki/apiserver.key, section: kube-api-server}
+    - {path: /etc/kubernetes/pki/apiserver-etcd-client.key, section: apiserver-etcd-client}
+    - {path: /etc/kubernetes/pki/apiserver-kubelet-client.key, section: apiserver-kubelet-client}
+    - {path: /etc/kubernetes/pki/front-proxy-client.key, section: front-proxy-client}
+    - {path: /tmp/controller-manager.key, section: kube-controller-manager}
+    - {path: /tmp/scheduler.key, section: kube-scheduler}
+    - {path: /tmp/admin.key, section: admin}
 
-- name: Create controlplane client certificates csr (2/2)
-  ansible.builtin.shell: "openssl req -new -key /tmp/{{item.name}}.key -subj \"{{item.subject}}\" -out {{item.name}}.csr"
+- name: Create All certificates
+  ansible.builtin.shell: "openssl x509 -req -in {{item.csr}} -CA {{item.ca}} -CAkey {{item.cakey}} -copy_extensions copyall -sha256 -CAcreateserial -out {{item.out}} -days 365 && chmod 600 {{item.out}}"
   args:
     chdir: /tmp
   loop:
-    - {name: controller-manager, subject: '/CN=system:kube-controller-manager'}
-    - {name: scheduler, subject: '/CN=system:kube-scheduler'}
-    - {name: admin, subject: '/CN=admin/O=system:masters'}
+    - {csr: kube-api-server.csr, ca: /etc/kubernetes/pki/ca.crt, cakey: /etc/kubernetes/pki/ca.key, out: /etc/kubernetes/pki/apiserver.crt}
+    - {csr: apiserver-etcd-client.csr, ca: /tmp/etcd-ca.crt, cakey: /tmp/etcd-ca.key, out: /etc/kubernetes/pki/apiserver-etcd-client.crt}
+    - {csr: apiserver-kubelet-client.csr, ca: /etc/kubernetes/pki/ca.crt, cakey: /etc/kubernetes/pki/ca.key, out: /etc/kubernetes/pki/apiserver-kubelet-client.crt}
+    - {csr: kube-controller-manager.csr, ca: /etc/kubernetes/pki/ca.crt, cakey: /etc/kubernetes/pki/ca.key, out: /tmp/controller-manager.crt}
+    - {csr: kube-scheduler.csr, ca: /etc/kubernetes/pki/ca.crt, cakey: /etc/kubernetes/pki/ca.key, out: /tmp/scheduler.crt}
+    - {csr: admin.csr, ca: /etc/kubernetes/pki/ca.crt, cakey: /etc/kubernetes/pki/ca.key, out: /tmp/admin.crt}
+    - {csr: front-proxy-client.csr, ca: /etc/kubernetes/pki/front-proxy-ca.crt, cakey: /etc/kubernetes/pki/front-proxy-ca.key, out: /etc/kubernetes/pki/front-proxy-client.crt}
 
-- name: Create apiserver server certificate
-  ansible.builtin.shell: "openssl x509 -req -in apiserver.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -out /etc/kubernetes/pki/apiserver.crt -extensions v3_req -extfile apiserver.cnf -days 365 && chmod 600 /etc/kubernetes/pki/apiserver.crt"
+- name: Create service account public key
+  ansible.builtin.shell: |
+    openssl rsa -in sa.key -pubout -out sa.pub
+    chmod 600 sa.pub
   args:
-    chdir: /tmp
-
-- name: Create apiserver-etcd-client certificate
-  ansible.builtin.shell: "openssl x509 -req -in apiserver-etcd-client.csr -CA /tmp/etcd-ca.crt -CAkey /tmp/etcd-ca.key -out /etc/kubernetes/pki/apiserver-etcd-client.crt -extensions v3_req -days 365 && chmod 600 /etc/kubernetes/pki/apiserver-etcd-client.crt"
-  args:
-    chdir: /tmp
-
-- name: Create apiserver-kubelet-client certificate
-  ansible.builtin.shell: "openssl x509 -req -in apiserver-kubelet-client.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -out /etc/kubernetes/pki/apiserver-kubelet-client.crt -extensions v3_req -days 365 && chmod 600 /etc/kubernetes/pki/apiserver-kubelet-client.crt"
-  args:
-    chdir: /tmp
-
-- name: Create service-account certificate
-  ansible.builtin.shell: "openssl x509 -req -in sa.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -out /etc/kubernetes/pki/sa.pub -extensions v3_req -days 365 && chmod 600 /etc/kubernetes/pki/sa.pub"
-  args:
-    chdir: /tmp
-
-- name: Create controlplane client certificates (1/2)
-  ansible.builtin.shell: "openssl x509 -req -in {{item.name}}.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -out /tmp/{{item.name}}.crt -extensions v3_req -days 365"
-  args:
-    chdir: /tmp
-  loop:
-    - {name: controller-manager}
-    - {name: scheduler}
-    - {name: sa}
-    - {name: admin}
-
-- name: Create controlplane client certificates (2/2)
-  ansible.builtin.shell: "openssl x509 -req -in {{item.name}}.csr -CA /etc/kubernetes/pki/front-proxy-ca.crt -CAkey /etc/kubernetes/pki/front-proxy-ca.key -out /etc/kubernetes/pki/{{item.name}}.crt -extensions v3_req -days 365 && chmod 600 /etc/kubernetes/pki/{{item.name}}.crt"
-  args:
-    chdir: /tmp
-  loop:
-    - {name: front-proxy-client}
+    chdir: /etc/kubernetes/pki
 
 - name: Generate etcd encryption key
   ansible.builtin.shell: "head -c 32 /dev/urandom | base64"

@@ -5,7 +5,6 @@
     mode: '0755'
     owner: root
     group: root
-  become: true
   loop:
     - /etc/kubernetes/pki/etcd
     - /opt/cni/bin
@@ -15,14 +14,7 @@
 
 - name: Install Base packages
   package:
-    name: "{{item}}"
-  loop:
-    - unzip
-    - conntrack
-    - curl
-    - tar
-    - git
-  ignore_errors: true
+    name: ['unzip','conntrack','curl','tar','git']
 
 - include_tasks: cni.yml
   when: cni == "flannel"

@@ -1,28 +1,6 @@
 - set_fact:
     arch: "{{ architecture[ansible_architecture|lower] }}"
 
-- name: Create folders
-  ansible.builtin.file:
-    path: "{{item}}"
-    state: directory
-    mode: '0700'
-    owner: root
-    group: root
-  loop:
-    - "/var/lib/kubelet"
-    - "/usr/local/lib/systemd/system"
-  when: "'worker' in group_names"
-
-- name: Create folders
-  ansible.builtin.file:
-    path: "{{item}}"
-    state: directory
-    mode: '0700'
-    owner: root
-    group: root
-  loop:
-    - "/var/lib/kube-proxy"
-
 - block:
   - include_tasks: pre_requisites.yml
   - include_tasks: cri.yml
@@ -86,59 +64,55 @@
 
 - name: Copy CA certificates
   ansible.builtin.copy:
-    src: "/tmp/{{item.name}}"
+    src: "/{{tmp_folder}}/{{item.name}}"
     dest: "{{item.path}}"
     mode: '0600'
   loop:
     - {name: ca.crt, path: /etc/kubernetes/pki/ca.crt}
     - {name: ca.key, path: /tmp/ca.key}
 
-- name: Create worker node component keys
-  ansible.builtin.shell: "openssl genrsa -out {{item.name}}.key 2048"
+- name: Create worker node component keys (kubelet)
+  ansible.builtin.shell: "openssl genrsa -out {{ansible_hostname}}.key 4096"
   args:
     chdir: /etc/kubernetes/pki
-    creates: /etc/kubernetes/pki/{{item.name}}.key
-  loop:
-    - {folder: kubelet, name: "{{ansible_hostname}}" }
+    creates: "/etc/kubernetes/pki/{{ansible_hostname}}.key"
   when: "'worker' in group_names"
 
-- name: Create worker node component keys
-  ansible.builtin.shell: "openssl genrsa -out {{item.name}}.key 2048"
+- name: Create worker node component keys (kube-proxy)
+  ansible.builtin.shell: "openssl genrsa -out kube-proxy.key 4096"
   args:
     chdir: /etc/kubernetes/pki
-    creates: /etc/kubernetes/pki/{{item.name}}.key
-  loop:
-    - {folder: kube-proxy, name: kube-proxy }
+    creates: /etc/kubernetes/pki/kube-proxy.key
 
-- name: Create worker node certificate csr
-  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/{{item.name}}.key -subj \"{{item.subject}}\" -out {{item.name}}.csr"
+- name: Create all CSR configs
+  ansible.builtin.template:
+    src: worker.conf.j2
+    dest: /tmp/worker.conf
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: Create worker node certificate csr (kubelet)
+  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/{{ansible_hostname}}.key -out kubelet.csr -config worker.conf -section kubelet"
   args:
     chdir: /tmp
-  loop:
-    - {folder: kubelet, name: "{{ ansible_hostname }}", subject: '/CN=system:node:{{ ansible_hostname }}/O=system:nodes'}
   when: "'worker' in group_names"
 
-- name: Create worker node certificate csr
-  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/{{item.name}}.key -subj \"{{item.subject}}\" -out {{item.name}}.csr"
+- name: Create worker node certificate csr (kube-proxy)
+  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/kube-proxy.key -out kube-proxy.csr -config worker.conf -section kube-proxy"
   args:
     chdir: /tmp
-  loop:
-    - {folder: kube-proxy, name: kube-proxy, subject: '/CN=system:kube-proxy'}
 
-- name: Create worker node certificates
-  ansible.builtin.shell: "openssl x509 -req -in {{item.name}}.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /tmp/ca.key -out /etc/kubernetes/pki/{{item.name}}.crt -extensions v3_req -days 365 && chmod 600 /etc/kubernetes/pki/{{item.name}}.crt"
+- name: Create worker node certificate (kubelet)
+  ansible.builtin.shell: "openssl x509 -req -in kubelet.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /tmp/ca.key -out /etc/kubernetes/pki/{{ansible_hostname}}.crt -copy_extensions copyall -sha256 -CAcreateserial -days 365 && chmod 600 /etc/kubernetes/pki/{{ansible_hostname}}.crt"
   args:
     chdir: /tmp
-  loop:
-    - {folder: kubelet, name: "{{ ansible_hostname }}" }
   when: "'worker' in group_names"
 
-- name: Create worker node certificates
-  ansible.builtin.shell: "openssl x509 -req -in {{item.name}}.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /tmp/ca.key -out /etc/kubernetes/pki/{{item.name}}.crt -extensions v3_req -days 365 && chmod 600 /etc/kubernetes/pki/{{item.name}}.crt"
+- name: Create worker node certificate (kube-proxy)
+  ansible.builtin.shell: "openssl x509 -req -in kube-proxy.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /tmp/ca.key -out /etc/kubernetes/pki/kube-proxy.crt -copy_extensions copyall -sha256 -CAcreateserial -days 365 && chmod 600 /etc/kubernetes/pki/kube-proxy.crt"
   args:
     chdir: /tmp
-  loop:
-    - {folder: kube-proxy, name: kube-proxy }
 
 - name: Check resolv.conf
   ansible.builtin.stat:
@@ -171,103 +145,75 @@
 
 - name: Generate Kubeconfigs (1/4)
   ansible.builtin.shell: "kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/pki/ca.crt --embed-certs=true --server=https://{{cp_endpoint}}:6443 --kubeconfig=/etc/kubernetes/kubelet.conf"
-  loop:
-    - {folder: kubelet, name: "{{ ansible_hostname }}"}
   when: "'worker' in group_names"
 
 - name: Generate Kubeconfigs (1/4)
   ansible.builtin.shell: "kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/pki/ca.crt --embed-certs=true --server=https://{{cp_endpoint}}:6443 --kubeconfig=/etc/kubernetes/kube-proxy.conf"
-  loop:
-    - {folder: kube-proxy, name: kube-proxy}
 
 - name: Generate Kubeconfigs (2/4)
-  ansible.builtin.shell: "kubectl config set-credentials {{item.group}} --client-certificate=/etc/kubernetes/pki/{{item.name}}.crt --client-key=/etc/kubernetes/pki/{{item.name}}.key --embed-certs=true --kubeconfig=/etc/kubernetes/kubelet.conf"
-  loop:
-    - {folder: kubelet, name: "{{ ansible_hostname }}", group: "system:node:{{ ansible_hostname }}"}
+  ansible.builtin.shell: "kubectl config set-credentials system:node:{{ansible_hostname}} --client-certificate=/etc/kubernetes/pki/{{ansible_hostname}}.crt --client-key=/etc/kubernetes/pki/{{ansible_hostname}}.key --embed-certs=true --kubeconfig=/etc/kubernetes/kubelet.conf"
   when: "'worker' in group_names"
 
 - name: Generate Kubeconfigs (2/4)
-  ansible.builtin.shell: "kubectl config set-credentials {{item.group}} --client-certificate=/etc/kubernetes/pki/{{item.name}}.crt --client-key=/etc/kubernetes/pki/{{item.name}}.key --embed-certs=true --kubeconfig=/etc/kubernetes/{{item.name}}.conf"
-  loop:
-    - {folder: kube-proxy, name: kube-proxy, group: system:kube-proxy}
+  ansible.builtin.shell: "kubectl config set-credentials system:kube-proxy --client-certificate=/etc/kubernetes/pki/kube-proxy.crt --client-key=/etc/kubernetes/pki/kube-proxy.key --embed-certs=true --kubeconfig=/etc/kubernetes/kube-proxy.conf"
 
 - name: Generate Kubeconfigs (3/4)
-  ansible.builtin.shell: "kubectl config set-context default --cluster=kubernetes --user={{item.group}} --kubeconfig=/etc/kubernetes/kubelet.conf"
-  loop:
-    - {folder: kubelet, name: "{{ ansible_hostname }}", group: "system:node:{{ ansible_hostname }}"}
+  ansible.builtin.shell: "kubectl config set-context default --cluster=kubernetes --user=system:node:{{ansible_hostname}} --kubeconfig=/etc/kubernetes/kubelet.conf"
   when: "'worker' in group_names"
 
 - name: Generate Kubeconfigs (3/4)
-  ansible.builtin.shell: "kubectl config set-context default --cluster=kubernetes --user={{item.group}} --kubeconfig=/etc/kubernetes/{{item.name}}.conf"
-  loop:
-    - {folder: kube-proxy, name: kube-proxy, group: system:kube-proxy}
+  ansible.builtin.shell: "kubectl config set-context default --cluster=kubernetes --user=system:kube-proxy --kubeconfig=/etc/kubernetes/kube-proxy.conf"
 
 - name: Generate Kubeconfigs (4/4)
   ansible.builtin.shell: "kubectl config use-context default --kubeconfig=/etc/kubernetes/kubelet.conf"
-  loop:
-    - {folder: kubelet, name: "{{ ansible_hostname }}"}
   when: "'worker' in group_names"
 
 - name: Generate Kubeconfigs (4/4)
-  ansible.builtin.shell: "kubectl config use-context default --kubeconfig=/etc/kubernetes/{{item.name}}.conf"
-  loop:
-    - {folder: kube-proxy, name: kube-proxy}
+  ansible.builtin.shell: "kubectl config use-context default --kubeconfig=/etc/kubernetes/kube-proxy.conf"
 
 - name: Create systemd unit file
   ansible.builtin.template:
-    src: "{{item}}.service.j2"
-    dest: /etc/systemd/system/{{item}}.service
+    src: "kubelet.service.j2"
+    dest: /etc/systemd/system/kubelet.service
     mode: '0644'
     owner: root
     group: root
-  loop:
-    - kubelet
   when: "'worker' in group_names"
 
 - name: Create systemd unit file
   ansible.builtin.template:
-    src: "{{item}}.service.j2"
-    dest: /etc/systemd/system/{{item}}.service
+    src: "kube-proxy.service.j2"
+    dest: /etc/systemd/system/kube-proxy.service
     mode: '0644'
     owner: root
     group: root
-  loop:
-    - kube-proxy
 
 - name: Reload & start service
   ansible.builtin.service:
-    name: "{{item}}"
+    name: kubelet
     enabled: true
     state: reloaded
-  loop:
-    - kubelet
   when: "'worker' in group_names"
   ignore_errors: true
 
 - name: Reload & start service
   ansible.builtin.service:
-    name: "{{item}}"
+    name: kube-proxy
     enabled: true
     state: reloaded
-  loop:
-    - kube-proxy
   ignore_errors: true
 
 - name: Start service
   ansible.builtin.service:
-    name: "{{item}}"
+    name: kubelet
     enabled: true
     state: started
-  loop:
-    - kubelet
   when: "'worker' in group_names"
 
 - name: Start service
   ansible.builtin.service:
-    name: "{{item}}"
+    name: kube-proxy
     enabled: true
     state: started
-  loop:
-    - kube-proxy
 
 - include_tasks: cleanup.yml

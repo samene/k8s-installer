@@ -23,12 +23,12 @@
       remote_src: true
 
   - name: Install runc
-    shell: "install -m 755 /tmp/runc.{{ arch }} /usr/local/sbin/runc"
+    shell: "install -m 755 /tmp/runc.{{ arch }} /usr/local/bin/runc"
 
 - name: Copy systemd file
   ansible.builtin.copy:
     src: files/containerd.service
-    dest: /usr/local/lib/systemd/system/containerd.service
+    dest: /etc/systemd/system/containerd.service
     mode: 0755
 
 - name: Configure containerd (1/3)

@@ -2,6 +2,7 @@
 - name: common
   hosts: all
   any_errors_fatal: true
+  become: true
   tags:
     - common
   roles:
@@ -34,16 +35,6 @@
   roles:
     - worker
 
-- name: post-install-flannel
-  hosts: etcd[0]
-  any_errors_fatal: true
-  become: true
-  tags:
-  - post-install
-  tasks:
-  - shell: "etcdctl --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key --cacert=/etc/kubernetes/pki/etcd/ca.crt --insecure-skip-tls-verify put /coreos.com/network/config '{ \"Network\": \"10.244.0.0/16\", \"Backend\": {\"Type\": \"vxlan\"}}'"
-    when: cni == "flannel"
-
 - name: install-cni-flannel
   hosts: all
   any_errors_fatal: true
@@ -67,7 +58,9 @@
 - name: chart-install
   hosts: control_plane[0]
   any_errors_fatal: true
+  become: true
   tags:
     - charts
   roles:
     - charts
+

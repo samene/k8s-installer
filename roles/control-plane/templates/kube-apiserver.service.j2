@@ -3,6 +3,7 @@ Description=Kubernetes API Server
 Documentation=https://github.com/kubernetes/kubernetes
 
 [Service]
+EnvironmentFile=/etc/environment
 ExecStart=/usr/local/bin/kube-apiserver \
 --advertise-address={{ip_address}} \
 --allow-privileged=true \
@@ -24,7 +25,6 @@ ExecStart=/usr/local/bin/kube-apiserver \
 --requestheader-extra-headers-prefix=X-Remote-Extra- \
 --requestheader-group-headers=X-Remote-Group \
 --requestheader-username-headers=X-Remote-User \
---service-account-key-file=/etc/kubernetes/pki/sa.pub \
 --service-cluster-ip-range=10.96.0.0/12 \
 --tls-cert-file=/etc/kubernetes/pki/apiserver.crt \
 --tls-private-key-file=/etc/kubernetes/pki/apiserver.key \

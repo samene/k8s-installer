@@ -11,6 +11,8 @@ peer-transport-security:
   cert-file: /etc/kubernetes/pki/etcd/peer.crt
   key-file: /etc/kubernetes/pki/etcd/peer.key
   trusted-ca-file: /etc/kubernetes/pki/etcd/ca.crt
+  allowed-cn:
+  - kube-etcd-peer
   client-cert-auth: true
   auto-tls: false
 
@@ -21,3 +23,4 @@ advertise-client-urls: https://{{ip_address}}:2379
 initial-cluster-token: etcd-cluster-token
 initial-cluster: {{initial_cluster}}
 initial-cluster-state: new
+peer-require-cn: true

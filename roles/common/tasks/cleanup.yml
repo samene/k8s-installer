@@ -6,8 +6,9 @@
     path: "{{item}}"
     state: absent
   loop:
-  - /tmp/etcd-flannel.cnf
+  - /tmp/etcd-flannel.conf
   - /tmp/etcd-flannel.csr
   - /etc/kubernetes/pki/etcd/ca.key
+  - /etc/kubernetes/pki/etcd/ca.srl
   - "/tmp/cni-plugins-{{ansible_system | lower}}-{{ arch }}-v{{cni_version}}.tgz"
   ignore_errors: true

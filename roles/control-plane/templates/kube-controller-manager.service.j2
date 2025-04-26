@@ -3,8 +3,9 @@ Description=Kubernetes Controller Manager
 Documentation=https://github.com/kubernetes/kubernetes
 
 [Service]
+EnvironmentFile=/etc/environment
 ExecStart=/usr/local/bin/kube-controller-manager \
---bind-address=0.0.0.0 \
+--bind-address=127.0.0.1 \
 --service-cluster-ip-range=10.96.0.0/12 \
 --cluster-cidr=10.244.0.0/16 \
 --kubeconfig=/etc/kubernetes/controller-manager.conf \
@@ -13,6 +14,7 @@ ExecStart=/usr/local/bin/kube-controller-manager \
 --leader-elect=true \
 --cluster-signing-cert-file=/etc/kubernetes/pki/ca.crt \
 --cluster-signing-key-file=/etc/kubernetes/pki/ca.key \
+--requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt \
 --root-ca-file=/etc/kubernetes/pki/ca.crt \
 --service-account-private-key-file=/etc/kubernetes/pki/sa.key \
 --controllers=*,bootstrapsigner \

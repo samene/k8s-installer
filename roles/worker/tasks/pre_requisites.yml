@@ -2,6 +2,7 @@
   community.general.modprobe:
     name: "{{item}}"
     state: present
+    persistent: present
   loop:
   - overlay
   - br_netfilter

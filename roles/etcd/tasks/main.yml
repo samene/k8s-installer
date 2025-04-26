@@ -55,7 +55,7 @@
 
 - name: Copy CA certificate
   ansible.builtin.copy:
-    src: "/tmp/{{item.name}}"
+    src: "/{{tmp_folder}}/{{item.name}}"
     dest: "{{item.path}}"
     owner: etcd
     group: etcd
@@ -66,7 +66,7 @@
 
 - name: Create etcd server key
   ansible.builtin.shell: |
-    openssl genrsa -out server.key 2048
+    openssl genrsa -out server.key 4096
     chown etcd:etcd server.key
     chmod 600 server.key
   args:
@@ -75,20 +75,23 @@
 
 - name: Create etcd server CSR config
   ansible.builtin.template:
-    src: etcd.cnf.j2
-    dest: /tmp/etcd.cnf
+    src: "{{item}}.j2"
+    dest: "/tmp/{{item}}"
     mode: '0644'
     owner: root
     group: root
+  loop:
+  - peer.conf
+  - etcd.conf
 
 - name: Create etcd server CSR
-  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/etcd/server.key -subj \"/CN=kube-etcd\" -out etcd.csr -config etcd.cnf"
+  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/etcd/server.key -out etcd.csr -config etcd.conf -section etcd-server"
   args:
     chdir: /tmp
 
 - name: Create etcd server certificate
   ansible.builtin.shell: |
-    openssl x509 -req -in etcd.csr -CA /etc/kubernetes/pki/etcd/ca.crt -CAkey /etc/kubernetes/pki/etcd/ca.key -out /etc/kubernetes/pki/etcd/server.crt -extensions v3_req -extfile etcd.cnf -days 365
+    openssl x509 -req -in etcd.csr -CA /etc/kubernetes/pki/etcd/ca.crt -CAkey /etc/kubernetes/pki/etcd/ca.key -out /etc/kubernetes/pki/etcd/server.crt -copy_extensions copyall -CAcreateserial -days 365
     chown etcd:etcd /etc/kubernetes/pki/etcd/server.crt
     chmod 600 /etc/kubernetes/pki/etcd/server.crt
   args:
@@ -96,7 +99,7 @@
 
 - name: Create etcd peer key
   ansible.builtin.shell: |
-    openssl genrsa -out peer.key 2048
+    openssl genrsa -out peer.key 4096
     chown etcd:etcd peer.key
     chmod 600 peer.key
   args:
@@ -104,13 +107,13 @@
     creates: /etc/kubernetes/pki/etcd/peer.key
 
 - name: Create etcd peer CSR
-  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/etcd/peer.key -subj \"/CN=kube-etcd-peer\" -out peer.csr -config etcd.cnf"
+  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/etcd/peer.key -out peer.csr -config /tmp/peer.conf -section etcd-peer"
   args:
     chdir: /tmp
 
 - name: Create etcd peer certificate
   ansible.builtin.shell: |
-    openssl x509 -req -in peer.csr -CA /etc/kubernetes/pki/etcd/ca.crt -CAkey /etc/kubernetes/pki/etcd/ca.key -out /etc/kubernetes/pki/etcd/peer.crt -extensions v3_req -extfile etcd.cnf -days 365
+    openssl x509 -req -in peer.csr -CA /etc/kubernetes/pki/etcd/ca.crt -CAkey /etc/kubernetes/pki/etcd/ca.key -out /etc/kubernetes/pki/etcd/peer.crt -copy_extensions copyall -CAcreateserial -days 365
     chown etcd:etcd /etc/kubernetes/pki/etcd/peer.crt
     chmod 600 /etc/kubernetes/pki/etcd/peer.crt
   args:

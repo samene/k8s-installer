@@ -1,0 +1,16 @@
+[etcd-flannel]
+distinguished_name = etcd-flannel_distinguished_name
+prompt             = no
+req_extensions     = default_req_extensions
+
+[etcd-flannel_distinguished_name]
+CN = etcd-flannel
+
+[default_req_extensions]
+basicConstraints     = CA:FALSE
+extendedKeyUsage     = clientAuth
+keyUsage             = critical, digitalSignature, keyEncipherment
+nsCertType           = client
+nsComment            = "Etcd Client Certificate"
+subjectKeyIdentifier = hash
+

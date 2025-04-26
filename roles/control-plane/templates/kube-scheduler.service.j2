@@ -3,11 +3,12 @@ Description=Kubernetes Scheduler
 Documentation=https://github.com/kubernetes/kubernetes
 
 [Service]
+EnvironmentFile=/etc/environment
 ExecStart=/usr/local/bin/kube-scheduler \
   --kubeconfig=/etc/kubernetes/scheduler.conf \
   --authentication-kubeconfig=/etc/kubernetes/scheduler.conf \
   --authorization-kubeconfig=/etc/kubernetes/scheduler.conf \
-  --bind-address=0.0.0.0 \
+  --bind-address=127.0.0.1 \
   --tls-min-version VersionTLS12 \
   --leader-elect=true
 Restart=on-failure

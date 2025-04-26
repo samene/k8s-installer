@@ -1,0 +1,44 @@
+[kube-proxy]
+distinguished_name = kube-proxy_distinguished_name
+prompt             = no
+req_extensions     = kube-proxy_req_extensions
+
+[kube-proxy_req_extensions]
+basicConstraints     = CA:FALSE
+extendedKeyUsage     = clientAuth, serverAuth
+keyUsage             = critical, digitalSignature, keyEncipherment
+nsCertType           = client
+nsComment            = "Kube Proxy Certificate"
+subjectAltName       = DNS:kube-proxy, IP:127.0.0.1
+subjectKeyIdentifier = hash
+
+[kube-proxy_distinguished_name]
+CN = system:kube-proxy
+O  = system:node-proxier
+C  = IN
+ST = Maharashtra
+L  = Pune
+
+# ---------------------------------
+
+[kubelet]
+distinguished_name = kubelet_distinguished_name
+prompt             = no
+req_extensions     = kubelet_req_extensions
+
+[kubelet_req_extensions]
+basicConstraints     = CA:FALSE
+extendedKeyUsage     = clientAuth, serverAuth
+keyUsage             = critical, digitalSignature, keyEncipherment
+nsCertType           = client
+nsComment            = "{{ansible_hostname}} kubelet Certificate"
+subjectAltName       = DNS:{{ansible_hostname}}, IP:127.0.0.1
+subjectKeyIdentifier = hash
+
+[kubelet_distinguished_name]
+CN = system:node:{{ansible_hostname}}
+O  = system:nodes
+C  = IN
+ST = Maharashtra
+L  = Pune
+

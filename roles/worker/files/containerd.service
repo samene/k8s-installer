@@ -18,6 +18,7 @@ Documentation=https://containerd.io
 After=network.target local-fs.target dbus.service
 
 [Service]
+EnvironmentFile=/etc/environment
 ExecStartPre=-/sbin/modprobe overlay
 ExecStart=/usr/local/bin/containerd
 

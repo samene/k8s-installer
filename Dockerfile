@@ -7,4 +7,10 @@ RUN apt-get update && apt-get install -y python3 python3-pip python3-venv bash c
 RUN pipx install --include-deps ansible && \
     pipx ensurepath
 ENV PATH=${PATH}:/root/.local/bin
+RUN ansible-galaxy collection install community.general
 
+RUN mkdir /root/k8s_installer
+COPY . /root/k8s_installer
+
+WORKDIR /root/k8s_installer
+ENTRYPOINT /bin/bash

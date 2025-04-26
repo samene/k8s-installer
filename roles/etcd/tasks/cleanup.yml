@@ -8,7 +8,8 @@
   loop:
   - "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
   - "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}"
-  - /tmp/etcd.cnf
+  - /tmp/etcd.conf
   - /tmp/etcd.csr
   - /tmp/peer.csr
+  - /tmp/peer.conf
   ignore_errors: true

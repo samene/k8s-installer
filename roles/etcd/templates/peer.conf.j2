@@ -1,0 +1,20 @@
+[etcd-peer]
+distinguished_name = etcd-peer_distinguished_name
+prompt             = no
+req_extensions     = default_req_extensions
+
+[etcd-peer_distinguished_name]
+CN = kube-etcd-peer
+
+[default_req_extensions]
+basicConstraints     = CA:FALSE
+extendedKeyUsage     = clientAuth, serverAuth
+keyUsage             = critical, digitalSignature, keyEncipherment
+nsCertType           = client
+nsComment            = "Etcd Peer Client Certificate"
+subjectAltName       = @alt_names
+subjectKeyIdentifier = hash
+
+[alt_names]
+IP.1 = {{ip_address}}
+IP.2 = 127.0.0.1

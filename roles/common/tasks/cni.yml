@@ -35,7 +35,7 @@
 
 - name: Copy ETCD CA certificate
   ansible.builtin.copy:
-    src: "/tmp/{{item.name}}"
+    src: "/{{tmp_folder}}/{{item.name}}"
     dest: "{{item.path}}"
     owner: root
     group: root
@@ -54,20 +54,20 @@
 
 - name: Create etcd-flannel CSR config
   ansible.builtin.template:
-    src: etcd.cnf.j2
-    dest: /tmp/etcd-flannel.cnf
+    src: etcd.conf.j2
+    dest: /tmp/etcd-flannel.conf
     mode: '0644'
     owner: root
     group: root
 
 - name: Create etcd-flannel CSR
-  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/etcd-flannel.key -subj \"/CN=etcd-flannel\" -out etcd-flannel.csr -config etcd-flannel.cnf"
+  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/etcd-flannel.key -out etcd-flannel.csr -config etcd-flannel.conf -section etcd-flannel"
   args:
     chdir: /tmp
 
 - name: Create etcd-flannel certificate
   ansible.builtin.shell: |
-    openssl x509 -req -in etcd-flannel.csr -CA /etc/kubernetes/pki/etcd/ca.crt -CAkey /etc/kubernetes/pki/etcd/ca.key -out /etc/kubernetes/pki/etcd-flannel.crt -extensions v3_req -extfile etcd-flannel.cnf -days 365
+    openssl x509 -req -in etcd-flannel.csr -CA /etc/kubernetes/pki/etcd/ca.crt -CAkey /etc/kubernetes/pki/etcd/ca.key -out /etc/kubernetes/pki/etcd-flannel.crt -copy_extensions copyall -sha256 -CAcreateserial -days 365
     chmod 600 /etc/kubernetes/pki/etcd-flannel.crt
   args:
     chdir: /tmp
