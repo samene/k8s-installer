@@ -12,4 +12,5 @@
   - /tmp/etcd.csr
   - /tmp/peer.csr
   - /tmp/peer.conf
+  - /tmp/ca.srl
   ignore_errors: true
