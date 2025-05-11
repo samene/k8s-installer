@@ -5,12 +5,14 @@
   shell: "curl -Lf https://github.com/derailed/k9s/releases/download/v{{ k9s_version }}/k9s_{{ansible_system | lower}}_{{arch}}.tar.gz -o k9s.tar.gz && tar -xvf k9s.tar.gz && mv k9s /usr/local/bin/k9s"
   args:
     creates: /usr/local/bin/k9s
+    chdir: /tmp
   become: true
 
 - name: Install helmfile
   shell: "curl -Lf https://github.com/helmfile/helmfile/releases/download/v{{helmfile_version}}/helmfile_{{helmfile_version}}_{{ansible_system | lower}}_{{arch}}.tar.gz -o helmfile.tar.gz && tar -xvf helmfile.tar.gz && chmod +x helmfile && mv helmfile /usr/local/bin/helmfile"
   args:
     creates: /usr/local/bin/helmfile
+    chdir: /tmp
   become: true
 
 - name: Install helm diff plugin
@@ -21,7 +23,6 @@
     dest: "/tmp/{{item}}"
   loop:
   - helmfile-1.yaml.j2
-  - helmfile-2.yaml.j2
 - name: Copy values files
   copy:
     src: "./files/{{item}}"
@@ -40,7 +41,5 @@
 - name: Wait for ingress
   shell: "kubectl -n ingress-nginx rollout status deployment/ingress-nginx-controller"
 
-- name: Install Helm charts
-  shell: "helmfile apply -f helmfile-2.yaml.j2"
-  args:
-    chdir: /tmp
+- include_tasks: cleanup.yml
+

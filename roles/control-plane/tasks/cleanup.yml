@@ -6,15 +6,12 @@
     path: "{{item}}"
     state: absent
   loop:
-  - "/tmp/kubernetes-server-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-  - /tmp/kubernetes
   - /tmp/control-plane.conf
   - /tmp/apiserver-etcd-client.csr
   - /tmp/apiserver-kubelet-client.csr
-  - /tmp/apiserver.csr
+  - /tmp/kube-api-server.csr
   - /tmp/kube-controller-manager.csr
   - /tmp/kube-scheduler.csr
-  - /tmp/service-accounts.csr
   - /tmp/front-proxy-client.csr
   - /tmp/admin.csr
   - /tmp/etcd-ca.srl

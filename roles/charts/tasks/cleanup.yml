@@ -1,0 +1,17 @@
+- set_fact:
+    arch: "{{ architecture[ansible_architecture|lower] }}"
+
+- name: Delete temporary files
+  ansible.builtin.file:
+    path: "{{item}}"
+    state: absent
+  loop:
+  - /tmp/helmfile.tar.gz
+  - /tmp/k9s.tar.gz
+  - /tmp/LICENSE
+  - /tmp/README.md
+  - /tmp/README-zh_CN.md
+  - /tmp/ingress-nginx-values.yaml
+  - /tmp/metrics-server-values.yaml
+  - /tmp/helmfile-1.yaml.j2
+  ignore_errors: true

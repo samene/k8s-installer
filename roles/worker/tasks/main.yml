@@ -6,61 +6,16 @@
   - include_tasks: cri.yml
   when: "'worker' in group_names"
 
-- block:
-  - name: Download worker release
-    ansible.builtin.get_url:
-      url: "{{ download_url }}/v{{ kubernetes_version }}/kubernetes-node-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-      dest: "/tmp"
-      force: false
-      mode: '0755'
-
-  - name: Untar worker node release
-    ansible.builtin.unarchive:
-      src: "/tmp/kubernetes-node-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-      dest: "/tmp"
-      remote_src: true
-
-  - name: Move worker node binaries
-    ansible.builtin.copy:
-      src: "/tmp/kubernetes/node/bin/{{item}}"
-      dest: "/usr/local/bin/{{item}}"
-      mode: '0755'
-      remote_src: true
-    loop:
-      - kubelet
-      - kubectl
-    when: not skip_download | default('false') | bool and "'worker' in group_names"
-
-  - name: Move worker node binaries
-    ansible.builtin.copy:
-      src: "/tmp/kubernetes/node/bin/{{item}}"
-      dest: "/usr/local/bin/{{item}}"
-      mode: '0755'
-      remote_src: true
-    loop:
-      - kube-proxy
-  when: not skip_download | default('false') | bool
-
-- block:
-  - name: Copy worker node binaries
-    ansible.builtin.copy:
-      src: "/data/kubernetes/{{ kubernetes_version }}/{{ arch }}/{{ item }}"
-      dest: "/usr/local/bin/{{item}}"
-      mode: '0755'
-    loop:
-      - kubelet
-      - kubectl
-  when: skip_download | default('false') | bool and "'worker' in group_names"
-
-- block:
-  - name: Copy worker node binaries
-    ansible.builtin.copy:
-      src: "/data/kubernetes/{{ kubernetes_version }}/{{ arch }}/{{ item }}"
-      dest: "/usr/local/bin/{{item}}"
-      mode: '0755'
-    loop:
-      - kube-proxy
-  when: skip_download | default('false') | bool
+- name: Download binaries
+  ansible.builtin.get_url:
+    url: "https://dl.k8s.io/v{{ kubernetes_version }}/bin/{{ansible_system | lower}}/{{ arch }}/{{item}}"
+    dest: "/usr/local/bin/{{item}}"
+    mode: '0755'
+    force: false
+  loop:
+   - kube-proxy
+   - kubelet
+   - kubectl
 
 - name: Copy CA certificates
   ansible.builtin.copy:
@@ -175,7 +130,7 @@
   ansible.builtin.template:
     src: "kubelet.service.j2"
     dest: /etc/systemd/system/kubelet.service
-    mode: '0644'
+    mode: '0600'
     owner: root
     group: root
   when: "'worker' in group_names"
@@ -184,7 +139,7 @@
   ansible.builtin.template:
     src: "kube-proxy.service.j2"
     dest: /etc/systemd/system/kube-proxy.service
-    mode: '0644'
+    mode: '0600'
     owner: root
     group: root
 

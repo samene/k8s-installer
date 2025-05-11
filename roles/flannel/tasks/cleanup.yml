@@ -10,4 +10,6 @@
   - "/tmp/cni-plugin-flannel-{{ansible_system | lower}}-{{ arch }}-v{{ flannel_version }}.tgz"
   - /tmp/flannel-{{ arch }}
   - /tmp/flanneld
+  - /tmp/README.md
+  - /tmp/mk-docker-opts.sh
   ignore_errors: true

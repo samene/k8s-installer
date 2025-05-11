@@ -29,19 +29,22 @@ ansible_ssh_common_args='-o StrictHostKeyChecking=no -o ControlMaster=auto -o Co
 
 ## Step 2
 
-Create a file `vars.yaml` containing the versions of different components. Sample file provided.
+Create a file `vars.yaml` containing the versions of different components. Sample files provided.
 
 ```
-etcd_version: 3.5.18
-kubernetes_version: 1.32.2
-containerd_version: 2.0.2
-runc_version: 1.2.5
-cni_version: 1.6.2
-flanneld_version: 0.26.4
+etcd_version: 3.5.21
+kubernetes_version: 1.33.0
+containerd_version: 2.1.0
+runc_version: 1.3.0
+cni_version: 1.7.1
+flanneld_version: 0.26.7
 flannel_version: 1.6.2-flannel1
-k9s_version: 0.32.7
+k9s_version: 0.50.5
 helmfile_version: 0.171.0
 local_path_provisioner_version: 0.0.31
+coredns_version: 1.42.1
+
+cni: flannel
 ```
 
 ## Step 3
