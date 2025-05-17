@@ -1,0 +1,15 @@
+repositories:
+- name: rancher
+  url: https://releases.rancher.com/server-charts/latest
+
+releases:
+- name: rancher
+  namespace: cattle-system
+  chart: rancher/rancher
+  set:
+  - name: bootstrapPassword
+    value: admin
+  - name: hostname
+    value: "rancher.{{loadbal_ip}}.nip.io"
+  - name: replicas
+    value: 1

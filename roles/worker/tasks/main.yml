@@ -103,28 +103,28 @@
   when: "'worker' in group_names"
 
 - name: Generate Kubeconfigs (1/4)
-  ansible.builtin.shell: "kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/pki/ca.crt --embed-certs=true --server=https://{{cp_endpoint}}:6443 --kubeconfig=/etc/kubernetes/kube-proxy.conf"
+  ansible.builtin.shell: "kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/pki/ca.crt --embed-certs=true --server=https://{{cp_endpoint}}:6443 --kubeconfig=/etc/kubernetes/proxy.conf"
 
 - name: Generate Kubeconfigs (2/4)
   ansible.builtin.shell: "kubectl config set-credentials system:node:{{ansible_hostname}} --client-certificate=/etc/kubernetes/pki/{{ansible_hostname}}.crt --client-key=/etc/kubernetes/pki/{{ansible_hostname}}.key --embed-certs=true --kubeconfig=/etc/kubernetes/kubelet.conf"
   when: "'worker' in group_names"
 
 - name: Generate Kubeconfigs (2/4)
-  ansible.builtin.shell: "kubectl config set-credentials system:kube-proxy --client-certificate=/etc/kubernetes/pki/kube-proxy.crt --client-key=/etc/kubernetes/pki/kube-proxy.key --embed-certs=true --kubeconfig=/etc/kubernetes/kube-proxy.conf"
+  ansible.builtin.shell: "kubectl config set-credentials system:kube-proxy --client-certificate=/etc/kubernetes/pki/kube-proxy.crt --client-key=/etc/kubernetes/pki/kube-proxy.key --embed-certs=true --kubeconfig=/etc/kubernetes/proxy.conf"
 
 - name: Generate Kubeconfigs (3/4)
   ansible.builtin.shell: "kubectl config set-context default --cluster=kubernetes --user=system:node:{{ansible_hostname}} --kubeconfig=/etc/kubernetes/kubelet.conf"
   when: "'worker' in group_names"
 
 - name: Generate Kubeconfigs (3/4)
-  ansible.builtin.shell: "kubectl config set-context default --cluster=kubernetes --user=system:kube-proxy --kubeconfig=/etc/kubernetes/kube-proxy.conf"
+  ansible.builtin.shell: "kubectl config set-context default --cluster=kubernetes --user=system:kube-proxy --kubeconfig=/etc/kubernetes/proxy.conf"
 
 - name: Generate Kubeconfigs (4/4)
   ansible.builtin.shell: "kubectl config use-context default --kubeconfig=/etc/kubernetes/kubelet.conf"
   when: "'worker' in group_names"
 
 - name: Generate Kubeconfigs (4/4)
-  ansible.builtin.shell: "kubectl config use-context default --kubeconfig=/etc/kubernetes/kube-proxy.conf"
+  ansible.builtin.shell: "kubectl config use-context default --kubeconfig=/etc/kubernetes/proxy.conf"
 
 - name: Create systemd unit file
   ansible.builtin.template:
