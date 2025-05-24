@@ -12,5 +12,5 @@
   - /tmp/etcd.csr
   - /tmp/peer.csr
   - /tmp/peer.conf
-  - /tmp/ca.srl
+  - /etc/kubernetes/pki/etcd/ca.srl
   ignore_errors: true
