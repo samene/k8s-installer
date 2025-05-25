@@ -41,7 +41,7 @@
       remote_src: true
 
 - name: Add key in etcd
-  shell: "etcdctl --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key --cacert=/etc/kubernetes/pki/etcd/ca.crt --insecure-skip-tls-verify put /coreos.com/network/config '{ \"Network\": \"10.244.0.0/16\", \"Backend\": {\"Type\": \"vxlan\"}}'"
+  shell: "/usr/local/bin/etcdctl --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key --cacert=/etc/kubernetes/pki/etcd/ca.crt --insecure-skip-tls-verify put /coreos.com/network/config '{ \"Network\": \"10.244.0.0/16\", \"Backend\": {\"Type\": \"vxlan\"}}'"
   delegate_to: "{{ groups['etcd'][0] }}"
   run_once: true
 
@@ -83,7 +83,7 @@
     lineinfile:
       path: /etc/systemd/resolved.conf
       regexp: '^DNS='
-      line: DNS=10.96.0.10 185.12.64.2 185.12.64.1
+      line: DNS=10.96.0.10 8.8.8.8
     register: dns1
   - name: Configure DNS (2/2)
     lineinfile:
@@ -103,7 +103,7 @@
     shell: nmcli -t -f UUID con show --active | head -n 1
     register: uuid
   - name: Configure DNS entry
-    shell: "nmcli con mod {{ uuid.stdout }} ipv4.dns \"10.96.0.10 185.12.64.2 185.12.64.1\""
+    shell: "nmcli con mod {{ uuid.stdout }} ipv4.dns \"10.96.0.10 8.8.8.8\""
   - name: Restart NetworkManager
     shell: service NetworkManager restart
 

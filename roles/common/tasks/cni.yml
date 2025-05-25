@@ -32,6 +32,7 @@
     owner: root
     group: root
     mode: '0655'
+  when: cni == "flannel"
 
 - name: Copy ETCD CA certificate
   ansible.builtin.copy:

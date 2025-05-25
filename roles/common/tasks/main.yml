@@ -12,11 +12,26 @@
 
 - include_tasks: certificate_authority.yml
 
+- name: Install kernel pre-requisites
+  ansible.builtin.shell: "dnf install -y kernel-devel-$(uname -r) kernel-modules-extra-$(uname -r)"
+  when: ansible_os_family == 'RedHat'
+
 - name: Install Base packages
   package:
     name: ['unzip','conntrack','curl','tar','git']
 
 - include_tasks: cni.yml
   when: cni == "flannel"
+
+- name: Add /usr/local/bin to PATH for all users
+  ansible.builtin.copy:
+    dest: /etc/profile.d/add-local-bin-to-path.sh
+    content: |
+      #!/bin/sh
+      case ":$PATH:" in
+        *:/usr/local/bin:*) ;;
+        *) export PATH="/usr/local/bin:$PATH" ;;
+      esac
+    mode: '0755'
 
 - include_tasks: cleanup.yml

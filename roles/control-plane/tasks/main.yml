@@ -109,28 +109,28 @@
     force: false
 
 - name: Generate Kubeconfigs (1/4)
-  ansible.builtin.shell: "kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/pki/ca.crt --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig=/etc/kubernetes/{{item}}.conf"
+  ansible.builtin.shell: "/usr/local/bin/kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/pki/ca.crt --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig=/etc/kubernetes/{{item}}.conf"
   loop:
     - controller-manager
     - scheduler
     - admin
 
 - name: Generate Kubeconfigs (2/4)
-  ansible.builtin.shell: "kubectl config set-credentials {{item.group}} --client-certificate=/tmp/{{item.name}}.crt --client-key=/tmp/{{item.name}}.key --embed-certs=true --kubeconfig=/etc/kubernetes/{{item.name}}.conf"
+  ansible.builtin.shell: "/usr/local/bin/kubectl config set-credentials {{item.group}} --client-certificate=/tmp/{{item.name}}.crt --client-key=/tmp/{{item.name}}.key --embed-certs=true --kubeconfig=/etc/kubernetes/{{item.name}}.conf"
   loop:
     - {name: controller-manager, group: system:kube-controller-manager}
     - {name: scheduler, group: system:kube-scheduler}
     - {name: admin, group: admin}
 
 - name: Generate Kubeconfigs (3/4)
-  ansible.builtin.shell: "kubectl config set-context default --cluster=kubernetes --user={{item.group}} --kubeconfig=/etc/kubernetes/{{item.name}}.conf"
+  ansible.builtin.shell: "/usr/local/bin/kubectl config set-context default --cluster=kubernetes --user={{item.group}} --kubeconfig=/etc/kubernetes/{{item.name}}.conf"
   loop:
     - {name: controller-manager, group: system:kube-controller-manager}
     - {name: scheduler, group: system:kube-scheduler}
     - {name: admin, group: admin}
 
 - name: Generate Kubeconfigs (4/4)
-  ansible.builtin.shell: "kubectl config use-context default --kubeconfig=/etc/kubernetes/{{item}}.conf"
+  ansible.builtin.shell: "/usr/local/bin/kubectl config use-context default --kubeconfig=/etc/kubernetes/{{item}}.conf"
   loop:
     - controller-manager
     - scheduler
@@ -172,7 +172,7 @@
   ansible.builtin.service:
     name: "{{item}}"
     enabled: true
-    state: started
+    state: restarted
   loop:
     - kube-apiserver
     - kube-controller-manager
@@ -185,18 +185,20 @@
     mode: 0644
 
 - name: Apply RBAC
-  ansible.builtin.shell: "kubectl apply -f /tmp/rbac.yaml"
+  ansible.builtin.shell: "/usr/local/bin/kubectl apply -f /tmp/rbac.yaml"
   run_once: true
 
 - name: Install helm
   ansible.builtin.shell: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  environment:
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
   run_once: true
 
 - name: Install coredns
   ansible.builtin.shell: |
-    helm repo add coredns https://coredns.github.io/helm
-    helm repo update
-    helm --namespace=kube-system upgrade --install coredns --version {{coredns_version}} --set service.clusterIP=10.96.0.10 coredns/coredns
+    /usr/local/bin/helm repo add coredns https://coredns.github.io/helm
+    /usr/local/bin/helm repo update
+    /usr/local/bin/helm --namespace=kube-system upgrade --install coredns --version {{coredns_version}} --set service.clusterIP=10.96.0.10 coredns/coredns
   run_once: true
 
 - include_tasks: cleanup.yml

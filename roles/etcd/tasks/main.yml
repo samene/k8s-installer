@@ -149,6 +149,6 @@
   ansible.builtin.service:
     name: etcd
     enabled: true
-    state: started
+    state: restarted
 
 - include_tasks: cleanup.yml
