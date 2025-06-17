@@ -1,4 +1,17 @@
 ---
+- name: Wait for availability of nodes
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: Wait for SSH to be available
+    wait_for:
+      port: 22
+      host: "{{ inventory_hostname }}"
+      delay: 10
+      timeout: 600
+      state: started
+    delegate_to: localhost
+
 - name: common
   hosts: all
   any_errors_fatal: true
@@ -55,6 +68,26 @@
     - role: cilium
       when: cni == "cilium"
 
+- name: install-cni-canal
+  hosts: all
+  any_errors_fatal: true
+  become: true
+  tags:
+    - post-install
+  roles:
+    - role: canal
+      when: cni == "canal"
+
+- name: install-gvisor
+  hosts: all
+  any_errors_fatal: true
+  become: true
+  tags:
+    - security
+  roles:
+    - role: gvisor
+      when: security_hardening | default(false)
+
 - name: chart-install
   hosts: control_plane[0]
   any_errors_fatal: true
@@ -63,4 +96,5 @@
     - charts
   roles:
     - charts
+
 

@@ -4,10 +4,11 @@ containerd_version: 1.7.27
 runc_version: 1.2.5
 cni_version: 1.7.1
 flanneld_version: 0.26.7
-flannel_version: 1.6.2-flannel1
+flannel_version: 1.7.1-flannel1
+canal_version: 3.30.0
 k9s_version: 0.50.5
 helmfile_version: 0.171.0
 local_path_provisioner_version: 0.0.31
 coredns_version: 1.42.1
-
-cni: flannel
+security_hardening: true
+cni: canal

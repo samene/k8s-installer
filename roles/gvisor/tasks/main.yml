@@ -1,0 +1,14 @@
+- name: Download runsc
+  ansible.builtin.get_url:
+    url: "{{ runsc_download_url }}/{{runsc_version}}/{{ansible_architecture|lower}}/runsc"
+    dest: "/usr/local/bin/runsc"
+    force: false
+    mode: '0755'
+
+- name: Download containerd-shim-runsc-v1
+  ansible.builtin.get_url:
+    url: "{{ runsc_download_url }}/{{runsc_version}}/{{ansible_architecture|lower}}/containerd-shim-runsc-v1"
+    dest: "/usr/local/bin/containerd-shim-runsc-v1"
+    force: false
+    mode: '0755'
+

@@ -1,0 +1,4 @@
+- name: Apply manifest
+  shell: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/refs/tags/v3.30.0/manifests/canal.yaml
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  run_once: true    
