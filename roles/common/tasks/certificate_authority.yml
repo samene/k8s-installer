@@ -1,9 +1,8 @@
 
 - name: Delete temporary folder
   local_action:
-    module: ansible.builtin.file
-    path: "{{ tmp_folder }}"
-    state: absent
+    module: ansible.builtin.shell
+    cmd: "sudo rm -rf {{ tmp_folder }}"
   run_once: true
 
 - name: Create temporary folder

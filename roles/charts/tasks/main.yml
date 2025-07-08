@@ -32,8 +32,6 @@
   - ingress-nginx-values.yaml
   - metrics-server-values.yaml
 
-- name: Install local-path-provisioner
-  shell: "/usr/local/bin/kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v{{local_path_provisioner_version}}/deploy/local-path-storage.yaml"
 - name: Install Helm charts
   shell: "/usr/local/bin/helmfile apply -f helmfile-1.yaml.j2"
   args:
@@ -44,12 +42,19 @@
 - name: Wait for ingress
   shell: "/usr/local/bin/kubectl -n ingress-nginx rollout status deployment/ingress-nginx-controller"
 
-- name: Install Helm charts
-  shell: "/usr/local/bin/helmfile apply -f helmfile-2.yaml.j2"
-  args:
-    chdir: /tmp
-  environment:
-    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+- block:
+
+  - name: Install local-path-provisioner
+    shell: "/usr/local/bin/kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v{{local_path_provisioner_version}}/deploy/local-path-storage.yaml"
+
+  - name: Install Helm charts
+    shell: "/usr/local/bin/helmfile apply -f helmfile-2.yaml.j2"
+    args:
+      chdir: /tmp
+    environment:
+      PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+
+  when: rancher_enabled
 
 - include_tasks: cleanup.yml
 

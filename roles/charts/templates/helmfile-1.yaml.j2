@@ -22,13 +22,18 @@ releases:
   namespace: ingress-nginx
   chart: ingress-nginx/ingress-nginx
   values:
-  - /tmp/ingress-nginx-values.yaml  
+  - /tmp/ingress-nginx-values.yaml
+  set:
+  - name: controller.hostPort.enabled
+    value: "{{ingress_nginx_enabled}}"
+  condition: controller.hostPort.enabled
 - name: cert-manager
   namespace: cert-manager
   chart: jetstack/cert-manager
   set:
   - name: crds.enabled
-    value: "true"
+    value: "{{cert_manager_enabled}}"
+  condition: crds.enabled
 - name: prometheus
   namespace: prometheus
   chart: prometheus-community/prometheus
@@ -39,6 +44,9 @@ releases:
     value: false
   - name: server.retention
     value: 2d
+  - name: server.service.enabled
+    value: "{{prometheus_enabled}}"
+  condition: server.service.enabled
 - name: longhorn
   namespace: longhorn-system
   chart: longhorn/longhorn
@@ -57,3 +65,7 @@ releases:
     value: 1
   - name: persistence.defaultClassReplicaCount
     value: 1
+  - name: persistence.defaultClass
+    value: "{{longhorn_enabled}}"
+  condition: persistence.defaultClass
+
