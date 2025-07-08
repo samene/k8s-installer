@@ -1,3 +1,15 @@
+environments:
+  default:
+    values:
+    - ingress-nginx:
+        enabled: "{{ingress_nginx_enabled}}"
+    - cert-manager:
+        enabled: "{{cert_manager_enabled}}"
+    - prometheus:
+        enabled: "{{prometheus_enabled}}"
+    - longhorn:
+        enabled: "{{longhorn_enabled}}"
+---
 repositories:
 - name: prometheus-community
   url: https://prometheus-community.github.io/helm-charts
@@ -23,17 +35,14 @@ releases:
   chart: ingress-nginx/ingress-nginx
   values:
   - /tmp/ingress-nginx-values.yaml
-  set:
-  - name: controller.hostPort.enabled
-    value: "{{ingress_nginx_enabled}}"
-  condition: controller.hostPort.enabled
+  condition: ingress-nginx.enabled
 - name: cert-manager
   namespace: cert-manager
   chart: jetstack/cert-manager
   set:
   - name: crds.enabled
-    value: "{{cert_manager_enabled}}"
-  condition: crds.enabled
+    value: true
+  condition: cert-manager.enabled
 - name: prometheus
   namespace: prometheus
   chart: prometheus-community/prometheus
@@ -44,9 +53,7 @@ releases:
     value: false
   - name: server.retention
     value: 2d
-  - name: server.service.enabled
-    value: "{{prometheus_enabled}}"
-  condition: server.service.enabled
+  condition: prometheus.enabled
 - name: longhorn
   namespace: longhorn-system
   chart: longhorn/longhorn
@@ -65,7 +72,5 @@ releases:
     value: 1
   - name: persistence.defaultClassReplicaCount
     value: 1
-  - name: persistence.defaultClass
-    value: "{{longhorn_enabled}}"
-  condition: persistence.defaultClass
+  condition: longhorn.enabled
 
