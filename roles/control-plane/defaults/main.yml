@@ -1,3 +1,4 @@
 download_url: https://dl.k8s.io
-kubernetes_version: '1.30.0'
+kubernetes_version: 1.33.3
+coredns_version: 1.43.0
 

@@ -1,5 +1,1 @@
-calico_download_url: https://github.com/projectcalico/calico/releases/download/
-calico_version: 3.30.0
-
-flanneld_download_url: https://github.com/flannel-io/flannel/releases/download
-flanneld_version: 0.26.1
+canal_version: 3.30.0
