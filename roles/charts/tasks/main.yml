@@ -43,7 +43,7 @@
     PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
 
 - name: Wait for ingress
-  shell: "/usr/local/bin/kubectl -n ingress-nginx rollout status deployment/ingress-nginx-controller"
+  shell: "/usr/local/bin/kubectl -n ingress-nginx rollout status daemonset/ingress-nginx-controller"
   when: ingress_nginx_enabled
 
 - block:
