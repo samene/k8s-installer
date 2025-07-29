@@ -2,13 +2,13 @@ environments:
   default:
     values:
     - ingress-nginx:
-        enabled: "{{ingress_nginx_enabled}}"
+        enabled: {{ingress_nginx_enabled}}
     - cert-manager:
-        enabled: "{{cert_manager_enabled}}"
+        enabled: {{cert_manager_enabled}}
     - prometheus:
-        enabled: "{{prometheus_enabled}}"
+        enabled: {{prometheus_enabled}}
     - longhorn:
-        enabled: "{{longhorn_enabled}}"
+        enabled: {{longhorn_enabled}}
 ---
 repositories:
 - name: prometheus-community

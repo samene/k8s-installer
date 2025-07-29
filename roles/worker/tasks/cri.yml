@@ -48,10 +48,9 @@
     insertafter: '.*registry]'
     marker: "# insecure registry 1"
     block: |
-      # insecure registry
 
-              [plugins."io.containerd.cri.v1.images".registry.mirrors.\"{{item}}\"]
-                endpoint = ["http://{{item}}"]
+            [plugins."io.containerd.cri.v1.images".registry.mirrors."{{item}}"]
+              endpoint = ["{{item}}"]
 
   loop: "{{ insecure_registries | default([]) | flatten(1) }}"
 - name: restart containerd
