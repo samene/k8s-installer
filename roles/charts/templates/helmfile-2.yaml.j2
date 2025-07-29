@@ -10,6 +10,6 @@ releases:
   - name: bootstrapPassword
     value: admin
   - name: hostname
-    value: "rancher.{{loadbal_ip}}.nip.io"
+    value: "rancher.{{loadbal_ip|default(ip_address)}}.nip.io"
   - name: replicas
     value: 1

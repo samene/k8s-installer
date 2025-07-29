@@ -12,3 +12,9 @@ local_path_provisioner_version: 0.0.31
 coredns_version: 1.42.1
 security_hardening: true
 cni: canal
+
+longhorn_enabled: true
+prometheus_enabled: true
+cert_manager_enabled: true
+ingress_nginx_enabled: true
+rancher_enabled: true
