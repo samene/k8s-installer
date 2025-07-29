@@ -1,10 +1,10 @@
 controller:
+  kind: DaemonSet
+  hostPort:
+    enabled: true
   ingressClassResource:
     default: true
   service:
-    type: NodePort
-    nodePorts:
-      http: 31394
-      https: 31390
+    enabled: false
 defaultBackend:
   enabled: false

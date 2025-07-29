@@ -42,6 +42,20 @@
     path: /etc/containerd/config.toml
     regexp: 'disabled_plugins'
     state: absent
+- name: add insecure registry
+  blockinfile:
+    path: /etc/containerd/config.toml
+    insertafter: '.*registry]'
+    marker: "# insecure registry 1"
+    block: |
+
+            [plugins."io.containerd.cri.v1.images".registry.mirrors."{{item}}"]
+              endpoint = ["{{item}}"]
+
+  loop: "{{ insecure_registries | default([]) | flatten(1) }}"
+- name: restart containerd
+  shell: systemctl restart containerd
+
 - name: remove apparmor profile for runc (if present)
   shell: mkdir -p /etc/apparmor.d/disable && ln -s /etc/apparmor.d/runc /etc/apparmor.d/disable/ && apparmor_parser -R /etc/apparmor.d/runc
   failed_when: false

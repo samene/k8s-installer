@@ -5,7 +5,7 @@ After=containerd.service
 Requires=containerd.service
 
 [Service]
-EnvironmentFile=/etc/environment
+EnvironmentFile=/etc/k8s.env
 ExecStart=/usr/local/bin/kubelet \
   --config=/etc/kubernetes/kubelet-config.yaml \
   --hostname-override={{ansible_hostname}} \
