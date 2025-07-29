@@ -1,3 +1,9 @@
 k9s_version: 0.50.9
 helmfile_version: 1.1.0
 local_path_provisioner_version: 0.0.31
+
+longhorn_enabled: false
+prometheus_enabled: false
+cert_manager_enabled: false
+ingress_nginx_enabled: false
+rancher_enabled: false
