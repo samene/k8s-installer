@@ -25,7 +25,8 @@ no_proxy:
 security_hardening: false
 cni: canal
 insecure_registries:
-- '10.151.0.6:5000'
+  - 'http://10.151.0.6:5000'
+  - 'https://10.4.5.6:8543'
 ######################
 # features
 ######################
