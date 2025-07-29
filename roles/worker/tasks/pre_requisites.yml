@@ -55,14 +55,3 @@
     path: /etc/fstab
     regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
     replace: '# \1'
-- block:
-  - name: Install pre-requisite packages
-    yum:
-      name: ['curl','ca-certificates','iscsi-initiator-utils','gpg','jq','tar','nfs-utils']
-      update_cache: yes
-  - name: Enable iscsid
-    systemd:
-      name: iscsid
-      state: started
-      enabled: yes
-  when: ansible_os_family == 'RedHat'    

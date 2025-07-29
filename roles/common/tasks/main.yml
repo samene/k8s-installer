@@ -12,13 +12,27 @@
 
 - include_tasks: certificate_authority.yml
 
-- name: Install kernel pre-requisites
-  ansible.builtin.shell: "dnf install -y kernel-modules-extra"
-  when: ansible_os_family == 'RedHat'
-
 - name: Install Base packages
   package:
     name: ['unzip','conntrack','curl','tar','git','iptables']
+
+- block:
+  - name: Install pre-requisite packages
+    yum:
+      name: ['ca-certificates','iscsi-initiator-utils','gpg','jq','nfs-utils']
+      update_cache: yes
+  - name: Enable iscsid
+    systemd:
+      name: iscsid
+      state: started
+      enabled: yes
+  when: ansible_os_family == 'RedHat'
+
+- name: Install kernel pre-requisites
+  ansible.builtin.shell: "dnf install -y kernel-modules-extra"
+  async: 300
+  poll: 0
+  when: ansible_os_family == 'RedHat'
 
 - set_fact:
     ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_default_ipv4.address}}{% endif %}"
