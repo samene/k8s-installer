@@ -14,12 +14,12 @@
 
 - name: Install Base packages
   package:
-    name: ['unzip','conntrack','curl','tar','git','iptables']
+    name: ['conntrack','curl','tar','git','iptables']
 
 - block:
   - name: Install pre-requisite packages
     yum:
-      name: ['ca-certificates','iscsi-initiator-utils','gpg','jq','nfs-utils']
+      name: ['unzip','ca-certificates','iscsi-initiator-utils','gpg','jq','nfs-utils']
       update_cache: yes
   - name: Enable iscsid
     systemd:
