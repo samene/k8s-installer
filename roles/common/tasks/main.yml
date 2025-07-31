@@ -12,6 +12,11 @@
 
 - include_tasks: certificate_authority.yml
 
+- name: Update apt cache
+  apt:
+    update_cache: yes
+  when: ansible_os_family == 'Debian'
+
 - name: Install Base packages
   package:
     name: ['unzip','conntrack','curl','tar','git','iptables']
