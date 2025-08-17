@@ -55,7 +55,7 @@
 
 - name: Copy CA certificate
   ansible.builtin.copy:
-    src: "/{{tmp_folder}}/{{item.name}}"
+    src: "{{tmp_folder}}/{{item.name}}"
     dest: "{{item.path}}"
     owner: etcd
     group: etcd

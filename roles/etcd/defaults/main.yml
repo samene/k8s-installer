@@ -1,2 +1,2 @@
-etcd_version: 3.5.13
+etcd_version: 3.6.2
 download_url: https://github.com/etcd-io/etcd/releases/download

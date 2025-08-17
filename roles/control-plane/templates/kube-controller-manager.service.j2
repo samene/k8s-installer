@@ -3,7 +3,7 @@ Description=Kubernetes Controller Manager
 Documentation=https://github.com/kubernetes/kubernetes
 
 [Service]
-EnvironmentFile=/etc/environment
+EnvironmentFile=/etc/k8s.env
 ExecStart=/usr/local/bin/kube-controller-manager \
 --bind-address=127.0.0.1 \
 --service-cluster-ip-range=10.96.0.0/12 \

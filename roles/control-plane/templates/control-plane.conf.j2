@@ -87,7 +87,7 @@ DNS.4 = kubernetes.default.svc.cluster.local
 IP.1 = 127.0.0.1
 IP.2 = {{ip_address}}
 IP.3 = {{ansible_default_ipv4.address}}
-IP.4 = {{inventory_hostname}}
+IP.4 = {{ansible_host}}
 IP.5 = 10.96.0.1
 {% if loadbalancer_ext_ip is defined %}
 IP.6 = {{loadbalancer_ext_ip}}

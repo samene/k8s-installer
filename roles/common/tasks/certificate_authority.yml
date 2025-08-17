@@ -1,9 +1,8 @@
 
 - name: Delete temporary folder
   local_action:
-    module: ansible.builtin.file
-    path: "{{ tmp_folder }}"
-    state: absent
+    module: ansible.builtin.shell
+    cmd: "sudo rm -rf {{ tmp_folder }}"
   run_once: true
 
 - name: Create temporary folder
@@ -16,7 +15,7 @@
 - name: Create CA keys
   local_action:
     module: ansible.builtin.shell
-    cmd: "openssl genrsa -out {{tmp_folder}}/{{item}}.key 4096"
+    cmd: "openssl genrsa -out {{tmp_folder}}/{{item}}.key 4096 && chown {{ lookup('env', 'USER') }} {{tmp_folder}}/{{item}}.key"
     args:
       chdir: "{{ tmp_folder }}"
   loop:
@@ -35,7 +34,7 @@
 - name: Create CA certificates
   local_action:
     module: ansible.builtin.shell
-    cmd: "openssl req -x509 -new -sha512 -noenc -key {{item.name}}.key -days 3652 -config ca.conf -out {{item.name}}.crt -subj \"{{item.subject}}\""
+    cmd: "openssl req -x509 -new -sha512 -noenc -key {{item.name}}.key -days 3652 -config ca.conf -out {{item.name}}.crt -subj \"{{item.subject}}\" && chown {{ lookup('env', 'USER') }} {{item.name}}.crt"
     args:
       chdir: "{{ tmp_folder }}"
   loop:
@@ -43,6 +42,4 @@
   - {name: etcd-ca, subject: "/CN=etcd-ca"}
   - {name: front-proxy-ca, subject: "/CN=kubernetes-front-proxy-ca"}
   run_once: true
-
-
 

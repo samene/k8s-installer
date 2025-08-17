@@ -6,7 +6,7 @@
   - name: Wait for SSH to be available
     wait_for:
       port: 22
-      host: "{{ inventory_hostname }}"
+      host: "{{ ansible_host }}"
       delay: 1
       timeout: 600
       state: started
@@ -47,6 +47,21 @@
     - worker
   roles:
     - worker
+
+- name: fetch-kubeconfig-label-nodes
+  hosts: control_plane[0]
+  any_errors_fatal: true
+  become: true
+  tags:
+    - post-install
+  tasks:
+    - name: Fetch kubeconfig
+      ansible.builtin.fetch:
+        src: /root/.kube/config
+        dest: /tmp/
+        flat: yes
+    - shell: "/usr/local/bin/kubectl label node {{ansible_hostname}} node-role.kubernetes.io/control-plane=true"
+    - shell: "/usr/local/bin/kubectl taint nodes {{ansible_hostname}} node-role.kubernetes.io/control-plane:NoSchedule"
 
 - name: install-cni-flannel
   hosts: all
@@ -96,5 +111,4 @@
     - charts
   roles:
     - charts
-
 
