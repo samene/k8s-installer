@@ -65,6 +65,5 @@
   ansible.builtin.service:
     name: "containerd"
     enabled: true
-    state: reloaded
   ignore_errors: true
 
