@@ -8,9 +8,13 @@
       port: 22
       host: "{{ ansible_host }}"
       delay: 1
-      timeout: 600
+      timeout: 120
       state: started
-    delegate_to: localhost
+
+- name: get facts
+  hosts: all
+  tags:
+    - always
 
 - name: common
   hosts: all
@@ -60,8 +64,13 @@
         src: /root/.kube/config
         dest: /tmp/
         flat: yes
-    - shell: "/usr/local/bin/kubectl label node {{ansible_hostname}} node-role.kubernetes.io/control-plane=true"
-    - shell: "/usr/local/bin/kubectl taint nodes {{ansible_hostname}} node-role.kubernetes.io/control-plane:NoSchedule"
+    - shell: "/usr/local/bin/kubectl label node {{ansible_hostname}} node-role.kubernetes.io/control-plane=true --overwrite"
+    - shell: "/usr/local/bin/kubectl taint nodes {{ansible_hostname}} node-role.kubernetes.io/control-plane:NoSchedule --overwrite"
+      when: groups['worker']|length > 1
+    - shell: "/usr/local/bin/kubectl label node {{hostvars[item].ansible_hostname}} node-role.kubernetes.io/worker=true --overwrite"
+      loop: "{{groups['worker'] | difference(groups['control_plane'])}}"
+    - shell: "/usr/local/bin/kubectl label node {{hostvars[item].ansible_hostname}} node-role.kubernetes.io/etcd=true --overwrite"
+      loop: "{{groups['etcd']}}"
 
 - name: install-cni-flannel
   hosts: all

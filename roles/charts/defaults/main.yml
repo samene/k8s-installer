@@ -6,4 +6,5 @@ longhorn_enabled: false
 prometheus_enabled: false
 cert_manager_enabled: false
 ingress_nginx_enabled: false
+local_path_storage_enabled: false
 rancher_enabled: false

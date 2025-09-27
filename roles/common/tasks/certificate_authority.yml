@@ -1,45 +1,37 @@
 
 - name: Delete temporary folder
-  local_action:
-    module: ansible.builtin.shell
-    cmd: "sudo rm -rf {{ tmp_folder }}"
-  run_once: true
+  ansible.builtin.shell: "sudo rm -rf {{ tmp_folder }}"
+  delegate_to: localhost
 
 - name: Create temporary folder
-  local_action:
-    module: ansible.builtin.file
+  ansible.builtin.file:
     path: "{{ tmp_folder }}"
     state: directory
-  run_once: true
+  delegate_to: localhost
 
 - name: Create CA keys
-  local_action:
-    module: ansible.builtin.shell
-    cmd: "openssl genrsa -out {{tmp_folder}}/{{item}}.key 4096 && chown {{ lookup('env', 'USER') }} {{tmp_folder}}/{{item}}.key"
-    args:
-      chdir: "{{ tmp_folder }}"
+  ansible.builtin.shell: "openssl genrsa -out {{tmp_folder}}/{{item}}.key 4096 && chown {{ lookup('env', 'USER') }} {{tmp_folder}}/{{item}}.key"
+  args:
+    chdir: "{{ tmp_folder }}"
   loop:
     - ca
     - etcd-ca
     - front-proxy-ca
-  run_once: true
+  delegate_to: localhost
 
 - name: Copy ca.conf
-  local_action:
-    module: ansible.builtin.copy
+  ansible.builtin.copy:
     src: files/ca.conf
     dest: "{{tmp_folder}}/ca.conf"
-  run_once: true
+  delegate_to: localhost
 
 - name: Create CA certificates
-  local_action:
-    module: ansible.builtin.shell
-    cmd: "openssl req -x509 -new -sha512 -noenc -key {{item.name}}.key -days 3652 -config ca.conf -out {{item.name}}.crt -subj \"{{item.subject}}\" && chown {{ lookup('env', 'USER') }} {{item.name}}.crt"
-    args:
-      chdir: "{{ tmp_folder }}"
+  ansible.builtin.shell: "openssl req -x509 -new -sha512 -noenc -key {{item.name}}.key -days 3652 -config ca.conf -out {{item.name}}.crt -subj \"{{item.subject}}\" && chown {{ lookup('env', 'USER') }} {{item.name}}.crt"
+  args:
+    chdir: "{{ tmp_folder }}"
   loop:
   - {name: ca, subject: "/CN=kubernetes-ca"}
   - {name: etcd-ca, subject: "/CN=etcd-ca"}
   - {name: front-proxy-ca, subject: "/CN=kubernetes-front-proxy-ca"}
-  run_once: true
+  delegate_to: localhost
 

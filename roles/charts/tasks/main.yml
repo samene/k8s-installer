@@ -46,18 +46,20 @@
   shell: "/usr/local/bin/kubectl -n ingress-nginx rollout status daemonset/ingress-nginx-controller"
   when: ingress_nginx_enabled
 
-- block:
+- name: Install local-path-provisioner
+  shell: "/usr/local/bin/kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v{{local_path_provisioner_version}}/deploy/local-path-storage.yaml"
+  when: local_path_storage_enabled
 
-  - name: Install local-path-provisioner
-    shell: "/usr/local/bin/kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v{{local_path_provisioner_version}}/deploy/local-path-storage.yaml"
+- name: Change default storage class
+  shell: "/usr/local/bin/kubectl patch storageclass local-path -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'"
+  when: local_path_storage_enabled and (not longhorn_enabled)
 
-  - name: Install Helm charts
-    shell: "/usr/local/bin/helmfile apply -f helmfile-2.yaml.j2"
-    args:
-      chdir: /tmp
-    environment:
-      PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
-
+- name: Install Helm charts
+  shell: "/usr/local/bin/helmfile apply -f helmfile-2.yaml.j2"
+  args:
+    chdir: /tmp
+  environment:
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
   when: rancher_enabled
 
 - include_tasks: cleanup.yml
