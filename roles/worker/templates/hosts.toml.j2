@@ -6,10 +6,3 @@ server = "{{item.scheme|default('https')}}://{{item.endpoint}}"
   skip_verify = true
 {% endif %}
 
-  {%- if item.username is defined and item.password is defined %}
-  
-  [host."{{item.scheme|default('https')}}://{{item.endpoint}}".auth]
-    username = "{{item.username}}"
-    password = "{{item.password}}"
-  {% endif %}
-

@@ -1,0 +1,12 @@
+{%- for registry in private_registries %}
+
+{%- if registry.username is defined and registry.password is defined %}
+
+      [plugins."io.containerd.cri.v1.images".registry.configs."{{registry.endpoint}}".auth]
+          username = "{{registry.username}}"
+          password = "{{registry.password}}"
+
+{%- endif %}
+
+{%- endfor %}
+

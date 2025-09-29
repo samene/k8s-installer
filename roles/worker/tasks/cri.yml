@@ -49,15 +49,21 @@
     after: "\\s+[plugins\\.'io.containerd\\.cri\\.v1\\.images'\\.registry]"
     regexp: "(\\s+)config_path = ''"
     replace: "\\1config_path = '/etc/containerd/certs.d'"
+
+- name: Configure private registries
+  ansible.builtin.lineinfile:
+    path: /etc/containerd/config.toml
+    insertafter: ".*/etc/containerd/certs.d"
+    line: "{{ lookup('template', 'private_registries.j2') }}"
 - name: Add private registries folders
   ansible.builtin.file:
-    path: "/etc/containerd/certs.d/{{item.endpoint|replace(':','_')}}"
+    path: "/etc/containerd/certs.d/{{item.endpoint}}"
     state: directory
   loop: "{{private_registries|default([])}}"
 - name: Create hosts.toml
   ansible.builtin.template:
     src: hosts.toml.j2
-    dest: "/etc/containerd/certs.d/{{item.endpoint|replace(':','_')}}/hosts.toml"
+    dest: "/etc/containerd/certs.d/{{item.endpoint}}/hosts.toml"
   loop: "{{private_registries|default([])}}"
 
 - name: restart containerd
