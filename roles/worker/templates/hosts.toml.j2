@@ -1,0 +1,15 @@
+server = "{{item.scheme|default('https')}}://{{item.endpoint}}"
+
+[host."{{item.scheme|default('https')}}://{{item.endpoint}}"]
+{%- if item.insecure_skip_verify|default(false) %}
+
+  skip_verify = true
+{% endif %}
+
+  {%- if item.username is defined and item.password is defined %}
+  
+  [host."{{item.scheme|default('https')}}://{{item.endpoint}}".auth]
+    username = "{{item.username}}"
+    password = "{{item.password}}"
+  {% endif %}
+

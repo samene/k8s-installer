@@ -24,9 +24,16 @@ no_proxy:
 ######################
 security_hardening: false
 cni: canal
-#insecure_registries: []
-# - 'http://10.151.0.6:5000'
-# - 'https://10.4.5.6:8543'
+#private_registries:
+# - endpoint: 10.151.0.6:5000
+#   scheme: http
+#   username: test
+#   password: pass
+# - endpoint: 10.4.5.6:5443
+#   scheme: https
+#   username: test
+#   password: pass
+#   insecure_skip_verify: true
 ######################
 # features
 ######################

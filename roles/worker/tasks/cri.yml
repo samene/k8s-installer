@@ -38,21 +38,28 @@
 - name: Configure containerd (2/3)
   shell: "sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml"
 - name: Configure containerd (3/3)
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/containerd/config.toml
     regexp: 'disabled_plugins'
     state: absent
-- name: add insecure registry
-  blockinfile:
+
+- name: Configure private registries
+  ansible.builtin.replace:
     path: /etc/containerd/config.toml
-    insertafter: '.*registry]'
-    marker: "# insecure registry 1"
-    block: |
+    after: "\\s+[plugins\\.'io.containerd\\.cri\\.v1\\.images'\\.registry]"
+    regexp: "(\\s+)config_path = ''"
+    replace: "\\1config_path = '/etc/containerd/certs.d'"
+- name: Add private registries folders
+  ansible.builtin.file:
+    path: "/etc/containerd/certs.d/{{item.endpoint|replace(':','_')}}"
+    state: directory
+  loop: "{{private_registries|default([])}}"
+- name: Create hosts.toml
+  ansible.builtin.template:
+    src: hosts.toml.j2
+    dest: "/etc/containerd/certs.d/{{item.endpoint|replace(':','_')}}/hosts.toml"
+  loop: "{{private_registries|default([])}}"
 
-            [plugins."io.containerd.cri.v1.images".registry.mirrors."{{item}}"]
-              endpoint = ["{{item}}"]
-
-  loop: "{{ insecure_registries | default([]) | flatten(1) }}"
 - name: restart containerd
   shell: systemctl restart containerd
 
