@@ -46,7 +46,8 @@
 - name: Configure private registries
   ansible.builtin.replace:
     path: /etc/containerd/config.toml
-    after: "\\s+[plugins\\.'io.containerd\\.cri\\.v1\\.images'\\.registry]"
+    after: "\\s+[plugins\\.'io\\.containerd\\.cri\\.v1\\.images'\\.registry]"
+    before: "\\s+[plugins\\.'io\\.containerd\\.cri\\.v1\\.runtime']"
     regexp: "(\\s+)config_path = ''"
     replace: "\\1config_path = '/etc/containerd/certs.d'"
 
