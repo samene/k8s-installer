@@ -46,16 +46,16 @@
 - name: Configure private registries
   ansible.builtin.replace:
     path: /etc/containerd/config.toml
-    after: "\\s+[plugins\\.'io\\.containerd\\.cri\\.v1\\.images'\\.registry]"
-    before: "\\s+[plugins\\.'io\\.containerd\\.cri\\.v1\\.runtime']"
-    regexp: "(\\s+)config_path = ''"
-    replace: "\\1config_path = '/etc/containerd/certs.d'"
-
+    after: 'plugins.*registry'
+    before: 'plugins.*runtime'
+    regexp: '(\s+)config_path =(.*)$'
+    replace: '\1config_path = ''/etc/containerd/certs.d'''
 - name: Configure private registries
-  ansible.builtin.lineinfile:
+  ansible.builtin.blockinfile:
     path: /etc/containerd/config.toml
     insertafter: ".*/etc/containerd/certs.d"
-    line: "{{ lookup('template', 'private_registries.j2') }}"
+    marker: "    # {mark} ANSIBLE MANAGED BLOCK"
+    block: "{{ lookup('template', 'private_registries.j2') }}"
 - name: Add private registries folders
   ansible.builtin.file:
     path: "/etc/containerd/certs.d/{{item.endpoint}}"
