@@ -94,7 +94,7 @@
       when: cni == "cilium"
 
 - name: install-cni-canal
-  hosts: all
+  hosts: control_plane[0]
   any_errors_fatal: true
   become: true
   tags:

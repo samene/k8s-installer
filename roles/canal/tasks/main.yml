@@ -1,4 +1,2 @@
 - name: Apply manifest
-  shell: "kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/refs/tags/v{{canal_version}}/manifests/canal.yaml"
-  delegate_to: "{{ groups['control_plane'][0] }}"
-  run_once: true    
+  shell: "/usr/local/bin/kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/refs/tags/v{{canal_version}}/manifests/canal.yaml"

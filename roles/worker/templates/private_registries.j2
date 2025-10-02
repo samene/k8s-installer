@@ -1,4 +1,4 @@
-{%- for registry in private_registries %}
+{%- for registry in private_registries|default([]) %}
 
 {%- if registry.username is defined and registry.password is defined %}
 

@@ -2,12 +2,14 @@
 - name: Delete temporary folder
   ansible.builtin.shell: "sudo rm -rf {{ tmp_folder }}"
   delegate_to: localhost
+  run_once: true
 
 - name: Create temporary folder
   ansible.builtin.file:
     path: "{{ tmp_folder }}"
     state: directory
   delegate_to: localhost
+  run_once: true
 
 - name: Create CA keys
   ansible.builtin.shell: "openssl genrsa -out {{tmp_folder}}/{{item}}.key 4096 && chown {{ lookup('env', 'USER') }} {{tmp_folder}}/{{item}}.key"
@@ -18,12 +20,14 @@
     - etcd-ca
     - front-proxy-ca
   delegate_to: localhost
+  run_once: true
 
 - name: Copy ca.conf
   ansible.builtin.copy:
     src: files/ca.conf
     dest: "{{tmp_folder}}/ca.conf"
   delegate_to: localhost
+  run_once: true
 
 - name: Create CA certificates
   ansible.builtin.shell: "openssl req -x509 -new -sha512 -noenc -key {{item.name}}.key -days 3652 -config ca.conf -out {{item.name}}.crt -subj \"{{item.subject}}\" && chown {{ lookup('env', 'USER') }} {{item.name}}.crt"
@@ -34,4 +38,5 @@
   - {name: etcd-ca, subject: "/CN=etcd-ca"}
   - {name: front-proxy-ca, subject: "/CN=kubernetes-front-proxy-ca"}
   delegate_to: localhost
+  run_once: true
 
