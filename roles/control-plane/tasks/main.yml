@@ -36,7 +36,7 @@
     - {name: ca.key, path: /etc/kubernetes/pki/ca.key}
     - {name: front-proxy-ca.crt, path: /etc/kubernetes/pki/front-proxy-ca.crt}
     - {name: front-proxy-ca.key, path: /etc/kubernetes/pki/front-proxy-ca.key}
-    - {name: etcd-ca.crt, path: /tmp/etcd-ca.crt}
+    - {name: etcd-ca.crt, path: /etc/kubernetes/pki/etcd-ca.crt}
     - {name: etcd-ca.key, path: /tmp/etcd-ca.key}
 
 - name: Create control plane component keys (1/2)
@@ -80,7 +80,7 @@
     chdir: /tmp
   loop:
     - {csr: kube-api-server.csr, ca: /etc/kubernetes/pki/ca.crt, cakey: /etc/kubernetes/pki/ca.key, out: /etc/kubernetes/pki/apiserver.crt}
-    - {csr: apiserver-etcd-client.csr, ca: /tmp/etcd-ca.crt, cakey: /tmp/etcd-ca.key, out: /etc/kubernetes/pki/apiserver-etcd-client.crt}
+    - {csr: apiserver-etcd-client.csr, ca: /etc/kubernetes/pki/etcd-ca.crt, cakey: /tmp/etcd-ca.key, out: /etc/kubernetes/pki/apiserver-etcd-client.crt}
     - {csr: apiserver-kubelet-client.csr, ca: /etc/kubernetes/pki/ca.crt, cakey: /etc/kubernetes/pki/ca.key, out: /etc/kubernetes/pki/apiserver-kubelet-client.crt}
     - {csr: kube-controller-manager.csr, ca: /etc/kubernetes/pki/ca.crt, cakey: /etc/kubernetes/pki/ca.key, out: /tmp/controller-manager.crt}
     - {csr: kube-scheduler.csr, ca: /etc/kubernetes/pki/ca.crt, cakey: /etc/kubernetes/pki/ca.key, out: /tmp/scheduler.crt}

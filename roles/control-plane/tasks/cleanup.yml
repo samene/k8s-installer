@@ -21,7 +21,6 @@
   - /tmp/controller-manager.key
   - /tmp/scheduler.key
   - /tmp/admin.crt
-  - /tmp/etcd-ca.crt
   - /tmp/etcd-ca.key
   - /tmp/rbac.yaml
   - /etc/kubernetes/pki/ca.srl
