@@ -11,8 +11,8 @@ ExecStart=/usr/local/bin/kubelet \
   --hostname-override={{ansible_hostname}} \
   --kubeconfig=/etc/kubernetes/kubelet.conf \
   --v=2
-Restart=on-failure
-RestartSec=5
+Restart=always
+RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target

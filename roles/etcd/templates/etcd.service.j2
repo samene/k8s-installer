@@ -1,12 +1,14 @@
 [Unit]
 Description=etcd
 Documentation=https://github.com/coreos
+After=network.target
 
 [Service]
 EnvironmentFile=/etc/k8s.env
 ExecStart=/usr/local/bin/etcd --config-file /etc/kubernetes/etcd-config.yml
-Restart=on-failure
-RestartSec=5
+Restart=always
+NotifyAccess=all
+RestartSec=10s
 User=etcd
 
 [Install]

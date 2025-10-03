@@ -6,8 +6,8 @@ Documentation=https://github.com/kubernetes/kubernetes
 EnvironmentFile=/etc/k8s.env
 ExecStart=/usr/local/bin/kube-proxy \
   --config=/etc/kubernetes/kube-proxy-config.yaml
-Restart=on-failure
-RestartSec=5
+Restart=always
+RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target

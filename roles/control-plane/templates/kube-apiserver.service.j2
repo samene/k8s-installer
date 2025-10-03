@@ -42,8 +42,8 @@ ExecStart=/usr/local/bin/kube-apiserver \
 --tls-min-version VersionTLS12 \
 --tls-cipher-suites TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 \
 --v=2
-Restart=on-failure
-RestartSec=5
+Restart=always
+RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target

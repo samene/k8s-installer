@@ -23,8 +23,8 @@ ExecStart=/usr/local/bin/kube-controller-manager \
 --tls-min-version=VersionTLS12 \
 --profiling=false \
 --v=2
-Restart=on-failure
-RestartSec=5
+Restart=always
+RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target

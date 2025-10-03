@@ -11,8 +11,8 @@ ExecStart=/usr/local/bin/kube-scheduler \
   --bind-address=127.0.0.1 \
   --tls-min-version VersionTLS12 \
   --leader-elect=true
-Restart=on-failure
-RestartSec=5
+Restart=always
+RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target
