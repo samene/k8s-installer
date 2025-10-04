@@ -7,7 +7,7 @@ ExecStart=/usr/local/bin/flanneld \
   --etcd-endpoints={{ etcd_cluster }} \
   --etcd-keyfile=/etc/kubernetes/pki/etcd-flannel.key \
   --etcd-certfile=/etc/kubernetes/pki/etcd-flannel.crt \
-  --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt \
+  --etcd-cafile=/etc/kubernetes/pki/etcd-ca.crt \
   --ip-masq
 Restart=on-failure
 RestartSec=5

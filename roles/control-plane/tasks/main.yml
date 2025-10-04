@@ -31,13 +31,26 @@
     src: "/{{tmp_folder}}/{{item.name}}"
     dest: "{{item.path}}"
     mode: '0600'
+    owner: root
+    group: root
   loop:
     - {name: ca.crt, path: /etc/kubernetes/pki/ca.crt}
     - {name: ca.key, path: /etc/kubernetes/pki/ca.key}
+    - {name: sa.key, path: /etc/kubernetes/pki/sa.key}
+    - {name: sa.pub, path: /etc/kubernetes/pki/sa.pub}
     - {name: front-proxy-ca.crt, path: /etc/kubernetes/pki/front-proxy-ca.crt}
     - {name: front-proxy-ca.key, path: /etc/kubernetes/pki/front-proxy-ca.key}
     - {name: etcd-ca.crt, path: /etc/kubernetes/pki/etcd-ca.crt}
     - {name: etcd-ca.key, path: /tmp/etcd-ca.key}
+
+- name: Copy encryption config
+  ansible.builtin.copy:
+    src: "{{tmp_folder}}/encryption-at-rest.yaml"
+    dest: /etc/kubernetes/encryption-at-rest.yaml
+    mode: '0600'
+    owner: root
+    group: root
+    force: false
 
 - name: Create control plane component keys (1/2)
   ansible.builtin.shell: "openssl genrsa -out {{item.folder}}/{{item.name}}.key 4096"
@@ -48,7 +61,6 @@
     - {name: apiserver, folder: /etc/kubernetes/pki}
     - {name: apiserver-kubelet-client, folder: /etc/kubernetes/pki}
     - {name: front-proxy-client, folder: /etc/kubernetes/pki}
-    - {name: sa, folder: /etc/kubernetes/pki}
     - {name: controller-manager, folder: /tmp}
     - {name: scheduler, folder: /tmp}
     - {name: admin, folder: /tmp}
@@ -87,27 +99,6 @@
     - {csr: admin.csr, ca: /etc/kubernetes/pki/ca.crt, cakey: /etc/kubernetes/pki/ca.key, out: /tmp/admin.crt}
     - {csr: front-proxy-client.csr, ca: /etc/kubernetes/pki/front-proxy-ca.crt, cakey: /etc/kubernetes/pki/front-proxy-ca.key, out: /etc/kubernetes/pki/front-proxy-client.crt}
 
-- name: Create service account public key
-  ansible.builtin.shell: |
-    openssl rsa -in sa.key -pubout -out sa.pub
-    chmod 600 sa.pub
-  args:
-    chdir: /etc/kubernetes/pki
-
-- name: Generate etcd encryption key
-  ansible.builtin.shell: "head -c 32 /dev/urandom | base64"
-  register: etcd_encryption_key
-  no_log: true
-
-- name: Create etcd encryption config
-  ansible.builtin.template:
-    src: encryption-config.yaml.j2
-    dest: /etc/kubernetes/encryption-at-rest.yaml
-    mode: '0600'
-    owner: root
-    group: root
-    force: false
-
 - name: Generate Kubeconfigs (1/4)
   ansible.builtin.shell: "/usr/local/bin/kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/pki/ca.crt --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig=/etc/kubernetes/{{item}}.conf"
   loop:
@@ -142,6 +133,9 @@
     dest: "{{ansible_env.HOME}}/.kube/config"
     mode: '0644'
     remote_src: true
+
+- set_fact:
+    etcd_cluster: "{% for host in groups['etcd'] %}https://{{hostvars[host]['ip_address']}}:2379{% if not loop.last %},{% endif %}{% endfor %}"
 
 - name: Create systemd unit file
   ansible.builtin.template:

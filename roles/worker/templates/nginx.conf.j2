@@ -1,0 +1,29 @@
+error_log stderr notice;
+
+worker_processes 2;
+worker_rlimit_nofile 130048;
+worker_shutdown_timeout 10s;
+
+events {
+  multi_accept on;
+  use epoll;
+  worker_connections 16384;
+}
+
+stream {
+  upstream kube_apiserver {
+    least_conn;
+    {%- for server in groups['control_plane'] %}
+
+    server {% if hostvars[server]['internal_ip'] is defined and hostvars[server]['internal_ip'] != '' %}{{hostvars[server]['internal_ip']}}{% else %}{{hostvars[server].ansible_default_ipv4.address}}{% endif %}:6443;
+    {%- endfor %}
+
+    }
+
+  server {
+    listen        127.0.0.1:6443;
+    proxy_pass    kube_apiserver;
+    proxy_timeout 10m;
+    proxy_connect_timeout 1s;
+  }
+}

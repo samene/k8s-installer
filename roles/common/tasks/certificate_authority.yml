@@ -19,6 +19,7 @@
     - ca
     - etcd-ca
     - front-proxy-ca
+    - sa
   delegate_to: localhost
   run_once: true
 
@@ -37,6 +38,31 @@
   - {name: ca, subject: "/CN=kubernetes-ca"}
   - {name: etcd-ca, subject: "/CN=etcd-ca"}
   - {name: front-proxy-ca, subject: "/CN=kubernetes-front-proxy-ca"}
+  delegate_to: localhost
+  run_once: true
+
+- name: Create Service Account signing certificate
+  ansible.builtin.shell: "openssl rsa -in sa.key -pubout -out sa.pub"
+  args:
+    chdir: "{{ tmp_folder }}"
+  delegate_to: localhost
+  run_once: true
+
+- name: Generate etcd encryption key
+  ansible.builtin.shell: "head -c 32 /dev/urandom | base64"
+  register: etcd_encryption_key
+  delegate_to: localhost
+  run_once: true
+  no_log: true
+
+- name: Create etcd encryption config
+  ansible.builtin.template:
+    src: encryption-config.yaml.j2
+    dest: "{{tmp_folder}}/encryption-at-rest.yaml"
+    mode: '0600'
+    owner: root
+    group: root
+    force: false
   delegate_to: localhost
   run_once: true
 

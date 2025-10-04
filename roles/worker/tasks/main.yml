@@ -6,6 +6,36 @@
   - include_tasks: cri.yml
   when: "'worker' in group_names"
 
+# nginx reverse proxy to reach control plane
+- block:
+  - block:
+    - name: Add nginx repo (RedHat)
+      ansible.builtin.copy:
+        src: files/nginx.repo
+        dest: /etc/yum.repos.d/nginx.repo
+        owner: root
+        group: root
+    - name: Install nginx (Redhat)
+      ansible.builtin.dnf:
+        name: nginx
+        update_cache: true
+        disable_gpg_check: true
+        state: present
+    when: ansible_os_family == 'RedHat'
+  - name: Create nginx reverse proxy config
+    ansible.builtin.template:
+      src: "nginx.conf.j2"
+      dest: /etc/nginx/nginx.conf
+      mode: '0600'
+      owner: root
+      group: root
+  - name: Start nginx service
+    ansible.builtin.service:
+      name: nginx
+      enabled: true
+      state: restarted
+  when: "'worker' in group_names and 'control_plane' not in group_names"
+
 - name: Download binaries
   ansible.builtin.get_url:
     url: "https://dl.k8s.io/v{{ kubernetes_version }}/bin/{{ansible_system | lower}}/{{ arch }}/{{item}}"
@@ -95,15 +125,12 @@
   loop:
     - {folder: kube-proxy, name: kube-proxy-config}
 
-- set_fact:
-    cp_endpoint: "{% if hostvars[groups['control_plane'][0]]['loadbalancer_int_ip'] is defined %}{{hostvars[groups['control_plane'][0]]['loadbalancer_int_ip']}}{% else %}{{hostvars[groups['control_plane'][0]]['internal_ip']}}{% endif %}"
-
 - name: Generate Kubeconfigs (1/4)
-  ansible.builtin.shell: "/usr/local/bin/kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/pki/ca.crt --embed-certs=true --server=https://{{cp_endpoint}}:6443 --kubeconfig=/etc/kubernetes/kubelet.conf"
+  ansible.builtin.shell: "/usr/local/bin/kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/pki/ca.crt --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig=/etc/kubernetes/kubelet.conf"
   when: "'worker' in group_names"
 
 - name: Generate Kubeconfigs (1/4)
-  ansible.builtin.shell: "/usr/local/bin/kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/pki/ca.crt --embed-certs=true --server=https://{{cp_endpoint}}:6443 --kubeconfig=/etc/kubernetes/proxy.conf"
+  ansible.builtin.shell: "/usr/local/bin/kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/pki/ca.crt --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig=/etc/kubernetes/proxy.conf"
 
 - name: Generate Kubeconfigs (2/4)
   ansible.builtin.shell: "/usr/local/bin/kubectl config set-credentials system:node:{{ansible_hostname}} --client-certificate=/etc/kubernetes/pki/{{ansible_hostname}}.crt --client-key=/etc/kubernetes/pki/{{ansible_hostname}}.key --embed-certs=true --kubeconfig=/etc/kubernetes/kubelet.conf"

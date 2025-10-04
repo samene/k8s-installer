@@ -42,8 +42,8 @@
     group: root
     mode: '0600'
   loop:
-    - {name: etcd-ca.crt, path: /etc/kubernetes/pki/etcd/ca.crt}
-    - {name: etcd-ca.key, path: /etc/kubernetes/pki/etcd/ca.key}
+    - {name: etcd-ca.crt, path: /etc/kubernetes/pki/etcd-ca.crt}
+    - {name: etcd-ca.key, path: /tmp/etcd-ca.key}
 
 - name: Create etcd key for flannel
   ansible.builtin.shell: |
@@ -68,7 +68,7 @@
 
 - name: Create etcd-flannel certificate
   ansible.builtin.shell: |
-    openssl x509 -req -in etcd-flannel.csr -CA /etc/kubernetes/pki/etcd/ca.crt -CAkey /etc/kubernetes/pki/etcd/ca.key -out /etc/kubernetes/pki/etcd-flannel.crt -copy_extensions copyall -sha256 -CAcreateserial -days 365
+    openssl x509 -req -in etcd-flannel.csr -CA /etc/kubernetes/pki/etcd-ca.crt -CAkey etcd-ca.key -out /etc/kubernetes/pki/etcd-flannel.crt -copy_extensions copyall -sha256 -CAcreateserial -days 365
     chmod 600 /etc/kubernetes/pki/etcd-flannel.crt
   args:
     chdir: /tmp

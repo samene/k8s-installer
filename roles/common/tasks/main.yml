@@ -6,7 +6,7 @@
     owner: root
     group: root
   loop:
-    - /etc/kubernetes/pki/etcd
+    - /etc/kubernetes/pki
     - /opt/cni/bin
     - /etc/cni/net.d
 

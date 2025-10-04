@@ -11,10 +11,10 @@ ExecStart=/usr/local/bin/kube-apiserver \
 --client-ca-file=/etc/kubernetes/pki/ca.crt \
 --enable-admission-plugins=NodeRestriction,ValidatingAdmissionWebhook \
 --enable-bootstrap-token-auth=true \
---etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt \
+--etcd-cafile=/etc/kubernetes/pki/etcd-ca.crt \
 --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt \
 --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key \
---etcd-servers=https://127.0.0.1:2379 \
+--etcd-servers={{ etcd_cluster }} \
 --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt \
 --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key \
 --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname \
@@ -37,7 +37,7 @@ ExecStart=/usr/local/bin/kube-apiserver \
 --event-ttl=1h \
 --service-account-key-file=/etc/kubernetes/pki/sa.pub \
 --service-account-signing-key-file=/etc/kubernetes/pki/sa.key \
---service-account-issuer=https://{{ip_address}}:6443 \
+--service-account-issuer=https://kubernetes.default.svc.cluster.local \
 --encryption-provider-config=/etc/kubernetes/encryption-at-rest.yaml \
 --tls-min-version VersionTLS12 \
 --tls-cipher-suites TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 \
