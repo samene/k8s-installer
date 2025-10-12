@@ -1,0 +1,52 @@
+- name: Create caddy group
+  ansible.builtin.group:
+    name: caddy
+    state: present
+    system: true
+- name: Create caddy user
+  ansible.builtin.user:
+    name: caddy
+    home: /var/lib/caddy
+    shell: /usr/sbin/nologin
+    system: true
+    group: caddy
+- name: Create folders
+  ansible.builtin.file:
+    path: "/etc/caddy"
+    state: directory
+    mode: '0700'
+    owner: caddy
+    group: caddy
+- name: Copy caddy binaries
+  ansible.builtin.copy:
+    src: "files/caddy_linux_{{ arch }}"
+    dest: /usr/local/bin/caddy
+    owner: root
+    group: root
+    mode: '0755'
+- name: Create Caddy config
+  ansible.builtin.template:
+    src: "Caddyfile.j2"
+    dest: /etc/caddy/Caddyfile
+    mode: '0600'
+    owner: caddy
+    group: caddy
+- name: Copy caddy.service
+  ansible.builtin.copy:
+    src: files/caddy.service
+    dest: /etc/systemd/system/caddy.service
+    owner: root
+    group: root
+    mode: '0600'
+- name: Reload & start service
+  ansible.builtin.service:
+    name: caddy
+    enabled: true
+    state: reloaded
+  ignore_errors: true
+- name: Start service
+  ansible.builtin.service:
+    name: caddy
+    enabled: true
+    state: restarted
+

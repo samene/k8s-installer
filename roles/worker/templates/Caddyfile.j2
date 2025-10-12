@@ -1,0 +1,18 @@
+{
+    layer4 {
+        127.0.0.1:6443 {
+            @secure tls
+            route @secure {
+                proxy {
+                    lb_policy round_robin
+                    health_interval 1s
+                    health_port 6443
+                    {%- for server in groups['control_plane'] %}
+
+                    upstream {% if hostvars[server]['internal_ip'] is defined and hostvars[server]['internal_ip'] != '' %}{{hostvars[server]['internal_ip']}}{% else %}{{hostvars[server].ansible_default_ipv4.address}}{% endif %}:6443
+                    {%- endfor %} 
+                }
+            }
+        }
+    }
+}

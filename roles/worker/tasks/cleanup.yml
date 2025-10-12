@@ -9,7 +9,7 @@
   - /tmp/kube-proxy.csr
   - /tmp/ca.key
   - /tmp/worker.conf
-  - /tmp/runc.amd64
+  - "/tmp/runc.{{ arch }}"
   - /etc/kubernetes/pki/ca.srl
   - "/tmp/kubelet.csr"
   - "/tmp/containerd-{{ containerd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
