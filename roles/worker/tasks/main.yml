@@ -38,6 +38,7 @@
   args:
     chdir: /etc/kubernetes/pki
     creates: /etc/kubernetes/pki/kube-proxy.key
+  when: cni != 'cilium'
 
 - name: Create all CSR configs
   ansible.builtin.template:
@@ -57,6 +58,7 @@
   ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/kube-proxy.key -out kube-proxy.csr -config worker.conf -section kube-proxy"
   args:
     chdir: /tmp
+  when: cni != 'cilium'
 
 - name: Create worker node certificate (kubelet)
   ansible.builtin.shell: "openssl x509 -req -in kubelet.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /tmp/ca.key -out /etc/kubernetes/pki/{{ansible_hostname}}.crt -copy_extensions copyall -sha256 -CAcreateserial -days 365 && chmod 600 /etc/kubernetes/pki/{{ansible_hostname}}.crt"
@@ -68,6 +70,7 @@
   ansible.builtin.shell: "openssl x509 -req -in kube-proxy.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /tmp/ca.key -out /etc/kubernetes/pki/kube-proxy.crt -copy_extensions copyall -sha256 -CAcreateserial -days 365 && chmod 600 /etc/kubernetes/pki/kube-proxy.crt"
   args:
     chdir: /tmp
+  when: cni != 'cilium'
 
 - name: Check resolv.conf
   ansible.builtin.stat:
@@ -94,6 +97,7 @@
     group: root
   loop:
     - {folder: kube-proxy, name: kube-proxy-config}
+  when: cni != 'cilium'
 
 - name: Generate Kubeconfigs (1/4)
   ansible.builtin.shell: "/usr/local/bin/kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/pki/ca.crt --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig=/etc/kubernetes/kubelet.conf"
@@ -101,6 +105,7 @@
 
 - name: Generate Kubeconfigs (1/4)
   ansible.builtin.shell: "/usr/local/bin/kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/pki/ca.crt --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig=/etc/kubernetes/proxy.conf"
+  when: cni != 'cilium'
 
 - name: Generate Kubeconfigs (2/4)
   ansible.builtin.shell: "/usr/local/bin/kubectl config set-credentials system:node:{{ansible_hostname}} --client-certificate=/etc/kubernetes/pki/{{ansible_hostname}}.crt --client-key=/etc/kubernetes/pki/{{ansible_hostname}}.key --embed-certs=true --kubeconfig=/etc/kubernetes/kubelet.conf"
@@ -108,6 +113,7 @@
 
 - name: Generate Kubeconfigs (2/4)
   ansible.builtin.shell: "/usr/local/bin/kubectl config set-credentials system:kube-proxy --client-certificate=/etc/kubernetes/pki/kube-proxy.crt --client-key=/etc/kubernetes/pki/kube-proxy.key --embed-certs=true --kubeconfig=/etc/kubernetes/proxy.conf"
+  when: cni != 'cilium'
 
 - name: Generate Kubeconfigs (3/4)
   ansible.builtin.shell: "/usr/local/bin/kubectl config set-context default --cluster=kubernetes --user=system:node:{{ansible_hostname}} --kubeconfig=/etc/kubernetes/kubelet.conf"
@@ -115,6 +121,7 @@
 
 - name: Generate Kubeconfigs (3/4)
   ansible.builtin.shell: "/usr/local/bin/kubectl config set-context default --cluster=kubernetes --user=system:kube-proxy --kubeconfig=/etc/kubernetes/proxy.conf"
+  when: cni != 'cilium'
 
 - name: Generate Kubeconfigs (4/4)
   ansible.builtin.shell: "/usr/local/bin/kubectl config use-context default --kubeconfig=/etc/kubernetes/kubelet.conf"
@@ -122,6 +129,7 @@
 
 - name: Generate Kubeconfigs (4/4)
   ansible.builtin.shell: "/usr/local/bin/kubectl config use-context default --kubeconfig=/etc/kubernetes/proxy.conf"
+  when: cni != 'cilium'
 
 - include_tasks: caddy.yml
   when: "'control_plane' not in group_names and 'worker' in group_names"
@@ -142,6 +150,7 @@
     mode: '0600'
     owner: root
     group: root
+  when: cni != 'cilium'
 
 - name: Reload & start service
   ansible.builtin.service:
@@ -157,6 +166,7 @@
     enabled: true
     state: reloaded
   ignore_errors: true
+  when: cni != 'cilium'
 
 - name: Start service
   ansible.builtin.service:
@@ -170,5 +180,6 @@
     name: kube-proxy
     enabled: true
     state: restarted
+  when: cni != 'cilium'
 
 - include_tasks: cleanup.yml
