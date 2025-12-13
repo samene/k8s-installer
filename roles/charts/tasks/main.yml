@@ -22,11 +22,11 @@
   shell: /usr/local/bin/helm plugin list | grep diff || /usr/local/bin/helm plugin install https://github.com/databus23/helm-diff
 - name: Copy helmfile
   ansible.builtin.template:
-    src: "{{item}}"
-    dest: "/tmp/{{item}}"
+    src: "{{item}}.yaml.j2"
+    dest: "/tmp/{{item}}.yaml"
   loop:
-  - helmfile-1.yaml.j2
-  - helmfile-2.yaml.j2
+  - helmfile-1
+  - helmfile-2
 - name: Copy values files
   copy:
     src: "./files/{{item}}"
@@ -36,7 +36,7 @@
   - metrics-server-values.yaml
 
 - name: Install Helm charts
-  shell: "/usr/local/bin/helmfile apply -f helmfile-1.yaml.j2"
+  shell: "/usr/local/bin/helmfile apply -f helmfile-1.yaml"
   args:
     chdir: /tmp
   environment:
@@ -55,7 +55,7 @@
   when: local_path_storage_enabled and (not longhorn_enabled)
 
 - name: Install Helm charts
-  shell: "/usr/local/bin/helmfile apply -f helmfile-2.yaml.j2"
+  shell: "/usr/local/bin/helmfile apply -f helmfile-2.yaml"
   args:
     chdir: /tmp
   environment:

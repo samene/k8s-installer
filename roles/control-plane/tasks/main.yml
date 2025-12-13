@@ -53,7 +53,7 @@
     force: false
 
 - name: Create control plane component keys (1/2)
-  ansible.builtin.shell: "openssl genrsa -out {{item.folder}}/{{item.name}}.key 4096"
+  ansible.builtin.shell: "openssl genrsa -out {{item.folder}}/{{item.name}}.key 2048"
   args:
     creates: "{{item.folder}}/{{item.name}}.key"
   loop:

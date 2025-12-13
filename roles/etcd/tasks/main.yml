@@ -66,7 +66,7 @@
 
 - name: Create etcd server key
   ansible.builtin.shell: |
-    openssl genrsa -out server.key 4096
+    openssl genrsa -out server.key 2048
     chown etcd:etcd server.key
     chmod 600 server.key
   args:
@@ -99,7 +99,7 @@
 
 - name: Create etcd peer key
   ansible.builtin.shell: |
-    openssl genrsa -out peer.key 4096
+    openssl genrsa -out peer.key 2048
     chown etcd:etcd peer.key
     chmod 600 peer.key
   args:

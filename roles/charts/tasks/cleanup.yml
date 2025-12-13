@@ -13,6 +13,6 @@
   - /tmp/README-zh_CN.md
   - /tmp/ingress-nginx-values.yaml
   - /tmp/metrics-server-values.yaml
-  - /tmp/helmfile-1.yaml.j2
-  - /tmp/helmfile-2.yaml.j2
+  - /tmp/helmfile-1.yaml
+  - /tmp/helmfile-2.yaml
   ignore_errors: true

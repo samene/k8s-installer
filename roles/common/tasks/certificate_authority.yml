@@ -12,7 +12,7 @@
   run_once: true
 
 - name: Create CA keys
-  ansible.builtin.shell: "openssl genrsa -out {{tmp_folder}}/{{item}}.key 4096 && chown {{ lookup('env', 'USER') }} {{tmp_folder}}/{{item}}.key"
+  ansible.builtin.shell: "openssl genrsa -out {{tmp_folder}}/{{item}}.key 2048 && chown {{ lookup('env', 'USER') }} {{tmp_folder}}/{{item}}.key"
   args:
     chdir: "{{ tmp_folder }}"
   loop:

@@ -27,14 +27,14 @@
     - {name: ca.key, path: /tmp/ca.key}
 
 - name: Create worker node component keys (kubelet)
-  ansible.builtin.shell: "openssl genrsa -out {{ansible_facts.hostname}}.key 4096"
+  ansible.builtin.shell: "openssl genrsa -out {{ansible_facts.hostname}}.key 2048"
   args:
     chdir: /etc/kubernetes/pki
     creates: "/etc/kubernetes/pki/{{ansible_facts.hostname}}.key"
   when: "'worker' in group_names"
 
 - name: Create worker node component keys (kube-proxy)
-  ansible.builtin.shell: "openssl genrsa -out kube-proxy.key 4096"
+  ansible.builtin.shell: "openssl genrsa -out kube-proxy.key 2048"
   args:
     chdir: /etc/kubernetes/pki
     creates: /etc/kubernetes/pki/kube-proxy.key
