@@ -1,10 +1,10 @@
 - set_fact:
-    arch: "{{ architecture[ansible_architecture|lower] }}"
+    arch: "{{ architecture[ansible_facts.architecture|lower] }}"
 
 - block:
   - name: Download containerd
     ansible.builtin.get_url:
-      url: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/containerd-{{ containerd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+      url: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/containerd-{{ containerd_version }}-{{ansible_facts.system | lower}}-{{ arch }}.tar.gz"
       dest: "/tmp"
       force: false
       mode: '0755'
@@ -18,7 +18,7 @@
 
   - name: Untar containerd release
     ansible.builtin.unarchive:
-      src: "/tmp/containerd-{{ containerd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+      src: "/tmp/containerd-{{ containerd_version }}-{{ansible_facts.system | lower}}-{{ arch }}.tar.gz"
       dest: "/usr/local"
       remote_src: true
 
@@ -73,7 +73,7 @@
 - name: remove apparmor profile for runc (if present)
   shell: mkdir -p /etc/apparmor.d/disable && ln -s /etc/apparmor.d/runc /etc/apparmor.d/disable/ && apparmor_parser -R /etc/apparmor.d/runc
   failed_when: false
-  when: ansible_os_family == 'Debian'
+  when: ansible_facts.os_family == 'Debian'
 
 - name: Reload & start service
   ansible.builtin.service:

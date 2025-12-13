@@ -31,12 +31,12 @@ basicConstraints     = CA:FALSE
 extendedKeyUsage     = clientAuth, serverAuth
 keyUsage             = critical, digitalSignature, keyEncipherment
 nsCertType           = client
-nsComment            = "{{ansible_hostname}} kubelet Certificate"
-subjectAltName       = DNS:{{ansible_hostname}}, IP:127.0.0.1
+nsComment            = "{{ansible_facts.hostname}} kubelet Certificate"
+subjectAltName       = DNS:{{ansible_facts.hostname}}, IP:127.0.0.1
 subjectKeyIdentifier = hash
 
 [kubelet_distinguished_name]
-CN = system:node:{{ansible_hostname}}
+CN = system:node:{{ansible_facts.hostname}}
 O  = system:nodes
 C  = IN
 ST = Maharashtra

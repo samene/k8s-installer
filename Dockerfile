@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM debian:trixie
 
 RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \

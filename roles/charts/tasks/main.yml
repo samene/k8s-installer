@@ -1,22 +1,22 @@
 - set_fact:
-    arch: "{{ architecture[ansible_architecture|lower] }}"
+    arch: "{{ architecture[ansible_facts.architecture|lower] }}"
 
 - name: Install k9s
-  shell: "curl -Lf https://github.com/derailed/k9s/releases/download/v{{ k9s_version }}/k9s_{{ansible_system | lower}}_{{arch}}.tar.gz -o k9s.tar.gz && tar -xvf k9s.tar.gz && mv k9s /usr/local/bin/k9s"
+  shell: "curl -Lf https://github.com/derailed/k9s/releases/download/v{{ k9s_version }}/k9s_{{ansible_facts.system | lower}}_{{arch}}.tar.gz -o k9s.tar.gz && tar -xvf k9s.tar.gz && mv k9s /usr/local/bin/k9s"
   args:
     creates: /usr/local/bin/k9s
     chdir: /tmp
   become: true
 
 - name: Install helmfile
-  shell: "curl -Lf https://github.com/helmfile/helmfile/releases/download/v{{helmfile_version}}/helmfile_{{helmfile_version}}_{{ansible_system | lower}}_{{arch}}.tar.gz -o helmfile.tar.gz && tar -xvf helmfile.tar.gz && chmod +x helmfile && mv helmfile /usr/local/bin/helmfile"
+  shell: "curl -Lf https://github.com/helmfile/helmfile/releases/download/v{{helmfile_version}}/helmfile_{{helmfile_version}}_{{ansible_facts.system | lower}}_{{arch}}.tar.gz -o helmfile.tar.gz && tar -xvf helmfile.tar.gz && chmod +x helmfile && mv helmfile /usr/local/bin/helmfile"
   args:
     creates: /usr/local/bin/helmfile
     chdir: /tmp
   become: true
 
 - set_fact:
-    ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_default_ipv4.address}}{% endif %}"
+    ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_facts.default_ipv4.address}}{% endif %}"
 
 - name: Install helm diff plugin
   shell: /usr/local/bin/helm plugin list | grep diff || /usr/local/bin/helm plugin install https://github.com/databus23/helm-diff
@@ -40,7 +40,7 @@
   args:
     chdir: /tmp
   environment:
-    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+    PATH: "/usr/local/bin:{{ ansible_facts.env.PATH }}"
 
 - name: Wait for ingress
   shell: "/usr/local/bin/kubectl -n ingress-nginx rollout status daemonset/ingress-nginx-controller"
@@ -59,7 +59,7 @@
   args:
     chdir: /tmp
   environment:
-    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+    PATH: "/usr/local/bin:{{ ansible_facts.env.PATH }}"
   when: rancher_enabled
 
 - include_tasks: cleanup.yml

@@ -1,5 +1,5 @@
 - set_fact:
-    arch: "{{ architecture[ansible_architecture|lower] }}"
+    arch: "{{ architecture[ansible_facts.architecture|lower] }}"
 
 - name: Delete temporary files
   ansible.builtin.file:
@@ -12,5 +12,5 @@
   - "/tmp/runc.{{ arch }}"
   - /etc/kubernetes/pki/ca.srl
   - "/tmp/kubelet.csr"
-  - "/tmp/containerd-{{ containerd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+  - "/tmp/containerd-{{ containerd_version }}-{{ansible_facts.system | lower}}-{{ arch }}.tar.gz"
   ignore_errors: true

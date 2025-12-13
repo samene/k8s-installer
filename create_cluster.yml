@@ -6,7 +6,7 @@
   - name: Wait for SSH to be available
     wait_for:
       port: 22
-      host: "{{ ansible_host }}"
+      host: "{{ ansible_facts.host }}"
       delay: 1
       timeout: 120
       state: started
@@ -65,14 +65,14 @@
         src: /root/.kube/config
         dest: /tmp/
         flat: yes
-    - shell: "/usr/local/bin/kubectl label node {{hostvars[item].ansible_hostname}} node-role.kubernetes.io/control-plane=true --overwrite"
+    - shell: "/usr/local/bin/kubectl label node {{hostvars[item].ansible_facts.hostname}} node-role.kubernetes.io/control-plane=true --overwrite"
       loop: "{{groups['control_plane'] | intersect(groups['worker'])}}"
-    - shell: "/usr/local/bin/kubectl taint nodes {{hostvars[item].ansible_hostname}} node-role.kubernetes.io/control-plane:NoSchedule --overwrite"
+    - shell: "/usr/local/bin/kubectl taint nodes {{hostvars[item].ansible_facts.hostname}} node-role.kubernetes.io/control-plane:NoSchedule --overwrite"
       loop: "{{groups['control_plane'] | intersect(groups['worker'])}}"
       when: groups['worker']|length > 1
-    - shell: "/usr/local/bin/kubectl label node {{hostvars[item].ansible_hostname}} node-role.kubernetes.io/worker=true --overwrite"
+    - shell: "/usr/local/bin/kubectl label node {{hostvars[item].ansible_facts.hostname}} node-role.kubernetes.io/worker=true --overwrite"
       loop: "{{groups['worker'] | difference(groups['control_plane'])}}"
-    - shell: "/usr/local/bin/kubectl label node {{hostvars[item].ansible_hostname}} node-role.kubernetes.io/etcd=true --overwrite"
+    - shell: "/usr/local/bin/kubectl label node {{hostvars[item].ansible_facts.hostname}} node-role.kubernetes.io/etcd=true --overwrite"
       loop: "{{groups['etcd'] | intersect(groups['worker'])}}"
 
 - name: install-cni-flannel

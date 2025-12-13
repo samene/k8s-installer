@@ -1,13 +1,13 @@
 - set_fact:
-    arch: "{{ architecture[ansible_architecture|lower] }}"
+    arch: "{{ architecture[ansible_facts.architecture|lower] }}"
 
 - name: Delete temporary files
   ansible.builtin.file:
     path: "{{item}}"
     state: absent
   loop:
-  - "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-  - "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}"
+  - "/tmp/etcd-v{{ etcd_version }}-{{ansible_facts.system | lower}}-{{ arch }}.tar.gz"
+  - "/tmp/etcd-v{{ etcd_version }}-{{ansible_facts.system | lower}}-{{ arch }}"
   - /tmp/etcd.conf
   - /tmp/etcd.csr
   - /tmp/peer.csr

@@ -1,13 +1,13 @@
 - set_fact:
-    arch: "{{ architecture[ansible_architecture|lower] }}"
+    arch: "{{ architecture[ansible_facts.architecture|lower] }}"
 
 - name: Delete temporary files
   ansible.builtin.file:
     path: "{{item}}"
     state: absent
   loop:
-  - "/tmp/flannel-v{{ flanneld_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
-  - "/tmp/cni-plugin-flannel-{{ansible_system | lower}}-{{ arch }}-v{{ flannel_version }}.tgz"
+  - "/tmp/flannel-v{{ flanneld_version }}-{{ansible_facts.system | lower}}-{{ arch }}.tar.gz"
+  - "/tmp/cni-plugin-flannel-{{ansible_facts.system | lower}}-{{ arch }}-v{{ flannel_version }}.tgz"
   - /tmp/flannel-{{ arch }}
   - /tmp/flanneld
   - /tmp/README.md

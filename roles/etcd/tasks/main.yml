@@ -1,21 +1,21 @@
 - set_fact:
-    arch: "{{ architecture[ansible_architecture|lower] }}"
+    arch: "{{ architecture[ansible_facts.architecture|lower] }}"
 - block:
   - name: Download etcd release
     ansible.builtin.get_url:
-      url: "{{ download_url }}/v{{ etcd_version }}/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+      url: "{{ download_url }}/v{{ etcd_version }}/etcd-v{{ etcd_version }}-{{ansible_facts.system | lower}}-{{ arch }}.tar.gz"
       dest: "/tmp"
       force: false
       mode: '0755'
   - name: Untar etcd release
     ansible.builtin.unarchive:
-      src: "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+      src: "/tmp/etcd-v{{ etcd_version }}-{{ansible_facts.system | lower}}-{{ arch }}.tar.gz"
       dest: "/tmp"
       remote_src: true
     register: etcd_untar
   - name: Move etcd binaries
     ansible.builtin.copy:
-      src: "/tmp/etcd-v{{ etcd_version }}-{{ansible_system | lower}}-{{ arch }}/{{item}}"
+      src: "/tmp/etcd-v{{ etcd_version }}-{{ansible_facts.system | lower}}-{{ arch }}/{{item}}"
       dest: "/usr/local/bin/{{item}}"
       mode: '0755'
       remote_src: true
@@ -49,9 +49,9 @@
     - /etc/kubernetes/pki/etcd
 
 - set_fact:
-    ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_default_ipv4.address}}{% endif %}"
+    ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_facts.default_ipv4.address}}{% endif %}"
 - set_fact:
-    initial_cluster: "{% for host in groups['etcd'] %}etcd-{{ hostvars[host]['ansible_hostname'] }}=https://{{hostvars[host]['ip_address']}}:2380{% if not loop.last %},{% endif %}{% endfor %}"
+    initial_cluster: "{% for host in groups['etcd'] %}etcd-{{ hostvars[host]['ansible_facts']['hostname'] }}=https://{{hostvars[host]['ip_address']}}:2380{% if not loop.last %},{% endif %}{% endfor %}"
 
 - name: Copy CA certificate
   ansible.builtin.copy:

@@ -1,4 +1,4 @@
-name: etcd-{{ansible_hostname}}
+name: etcd-{{ansible_facts.hostname}}
 data-dir: /var/lib/etcd
 
 client-transport-security:

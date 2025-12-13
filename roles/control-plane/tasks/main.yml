@@ -1,5 +1,5 @@
 - set_fact:
-    arch: "{{ architecture[ansible_architecture|lower] }}"
+    arch: "{{ architecture[ansible_facts.architecture|lower] }}"
 
 - name: Create folders
   ansible.builtin.file:
@@ -9,11 +9,11 @@
     owner: root
     group: root
   loop:
-    - "{{ ansible_env.HOME }}/.kube"
+    - "{{ ansible_facts.env.HOME }}/.kube"
 
 - name: Download binaries
   ansible.builtin.get_url:
-    url: "https://dl.k8s.io/v{{ kubernetes_version }}/bin/{{ansible_system | lower}}/{{ arch }}/{{item}}"
+    url: "https://dl.k8s.io/v{{ kubernetes_version }}/bin/{{ansible_facts.system | lower}}/{{ arch }}/{{item}}"
     dest: "/usr/local/bin/{{item}}"
     mode: '0755'
     force: false
@@ -24,7 +24,7 @@
    - kubectl
 
 - set_fact:
-    ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_default_ipv4.address}}{% endif %}"
+    ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_facts.default_ipv4.address}}{% endif %}"
 
 - name: Copy CA certificates
   ansible.builtin.copy:
@@ -130,7 +130,7 @@
 - name: Move admin kubeconfig
   ansible.builtin.copy:
     src: /etc/kubernetes/admin.conf
-    dest: "{{ansible_env.HOME}}/.kube/config"
+    dest: "{{ansible_facts.env.HOME}}/.kube/config"
     mode: '0644'
     remote_src: true
 
@@ -185,7 +185,7 @@
 - name: Install helm
   ansible.builtin.shell: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
   environment:
-    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+    PATH: "/usr/local/bin:{{ ansible_facts.env.PATH }}"
   run_once: true
 
 - name: Install coredns

@@ -13,8 +13,8 @@ clusterDomain: "cluster.local"
 clusterDNS:
   - "10.96.0.10"
 runtimeRequestTimeout: "15m"
-tlsPrivateKeyFile: "/etc/kubernetes/pki/{{ansible_hostname}}.key"
-tlsCertFile: "/etc/kubernetes/pki/{{ansible_hostname}}.crt"
+tlsPrivateKeyFile: "/etc/kubernetes/pki/{{ansible_facts.hostname}}.key"
+tlsCertFile: "/etc/kubernetes/pki/{{ansible_facts.hostname}}.crt"
 tlsCipherSuites:
   - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
   - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256

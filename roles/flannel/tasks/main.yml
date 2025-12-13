@@ -1,15 +1,15 @@
 - set_fact:
-    arch: "{{ architecture[ansible_architecture|lower] }}"
+    arch: "{{ architecture[ansible_facts.architecture|lower] }}"
 - block:
   - name: Download flanneld
     ansible.builtin.get_url:
-      url: "{{ flanneld_download_url }}/v{{flanneld_version}}/flannel-v{{flanneld_version}}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+      url: "{{ flanneld_download_url }}/v{{flanneld_version}}/flannel-v{{flanneld_version}}-{{ansible_facts.system | lower}}-{{ arch }}.tar.gz"
       dest: "/tmp"
       force: false
       mode: '0755'
   - name: Untar flanneld release
     ansible.builtin.unarchive:
-      src: "/tmp/flannel-v{{ flanneld_version }}-{{ansible_system | lower}}-{{ arch }}.tar.gz"
+      src: "/tmp/flannel-v{{ flanneld_version }}-{{ansible_facts.system | lower}}-{{ arch }}.tar.gz"
       dest: "/tmp"
       remote_src: true
     register: flannedl_untar
@@ -23,13 +23,13 @@
 - block:
   - name: Download flannel
     ansible.builtin.get_url:
-      url: "{{ flannel_download_url }}/v{{ flannel_version }}/cni-plugin-flannel-{{ansible_system | lower}}-{{ arch }}-v{{ flannel_version }}.tgz"
+      url: "{{ flannel_download_url }}/v{{ flannel_version }}/cni-plugin-flannel-{{ansible_facts.system | lower}}-{{ arch }}-v{{ flannel_version }}.tgz"
       dest: "/tmp"
       force: false
       mode: '0755'
   - name: Untar flannel release
     ansible.builtin.unarchive:
-      src: "/tmp/cni-plugin-flannel-{{ansible_system | lower}}-{{ arch }}-v{{ flannel_version }}.tgz"
+      src: "/tmp/cni-plugin-flannel-{{ansible_facts.system | lower}}-{{ arch }}-v{{ flannel_version }}.tgz"
       dest: "/tmp"
       remote_src: true
     register: flannel_untar
@@ -46,7 +46,7 @@
   run_once: true
 
 - set_fact:
-    ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_default_ipv4.address}}{% endif %}"
+    ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_facts.default_ipv4.address}}{% endif %}"
   delegate_to: "{{ groups['etcd'][0] }}"
   run_once: true
 
@@ -95,7 +95,7 @@
     shell: "systemctl restart systemd-resolved.service"
     when: dns1.changed or dns2.changed
 
-  when: "'control_plane' in group_names and ansible_os_family == 'Debian'"
+  when: "'control_plane' in group_names and ansible_facts.os_family == 'Debian'"
 
 - block:
 
@@ -107,6 +107,6 @@
   - name: Restart NetworkManager
     shell: service NetworkManager restart
 
-  when: "'control_plane' in group_names and ansible_os_family == 'RedHat'"
+  when: "'control_plane' in group_names and ansible_facts.os_family == 'RedHat'"
 
 - include_tasks: cleanup.yml

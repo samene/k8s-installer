@@ -1,5 +1,5 @@
 - set_fact:
-    arch: "{{ architecture[ansible_architecture|lower] }}"
+    arch: "{{ architecture[ansible_facts.architecture|lower] }}"
 
 - block:
   - include_tasks: pre_requisites.yml
@@ -8,7 +8,7 @@
 
 - name: Download binaries
   ansible.builtin.get_url:
-    url: "https://dl.k8s.io/v{{ kubernetes_version }}/bin/{{ansible_system | lower}}/{{ arch }}/{{item}}"
+    url: "https://dl.k8s.io/v{{ kubernetes_version }}/bin/{{ansible_facts.system | lower}}/{{ arch }}/{{item}}"
     dest: "/usr/local/bin/{{item}}"
     mode: '0755'
     force: false
@@ -27,10 +27,10 @@
     - {name: ca.key, path: /tmp/ca.key}
 
 - name: Create worker node component keys (kubelet)
-  ansible.builtin.shell: "openssl genrsa -out {{ansible_hostname}}.key 4096"
+  ansible.builtin.shell: "openssl genrsa -out {{ansible_facts.hostname}}.key 4096"
   args:
     chdir: /etc/kubernetes/pki
-    creates: "/etc/kubernetes/pki/{{ansible_hostname}}.key"
+    creates: "/etc/kubernetes/pki/{{ansible_facts.hostname}}.key"
   when: "'worker' in group_names"
 
 - name: Create worker node component keys (kube-proxy)
@@ -49,7 +49,7 @@
     group: root
 
 - name: Create worker node certificate csr (kubelet)
-  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/{{ansible_hostname}}.key -out kubelet.csr -config worker.conf -section kubelet"
+  ansible.builtin.shell: "openssl req -new -key /etc/kubernetes/pki/{{ansible_facts.hostname}}.key -out kubelet.csr -config worker.conf -section kubelet"
   args:
     chdir: /tmp
   when: "'worker' in group_names"
@@ -61,7 +61,7 @@
   when: cni != 'cilium'
 
 - name: Create worker node certificate (kubelet)
-  ansible.builtin.shell: "openssl x509 -req -in kubelet.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /tmp/ca.key -out /etc/kubernetes/pki/{{ansible_hostname}}.crt -copy_extensions copyall -sha256 -CAcreateserial -days 365 && chmod 600 /etc/kubernetes/pki/{{ansible_hostname}}.crt"
+  ansible.builtin.shell: "openssl x509 -req -in kubelet.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /tmp/ca.key -out /etc/kubernetes/pki/{{ansible_facts.hostname}}.crt -copy_extensions copyall -sha256 -CAcreateserial -days 365 && chmod 600 /etc/kubernetes/pki/{{ansible_facts.hostname}}.crt"
   args:
     chdir: /tmp
   when: "'worker' in group_names"
@@ -108,7 +108,7 @@
   when: cni != 'cilium'
 
 - name: Generate Kubeconfigs (2/4)
-  ansible.builtin.shell: "/usr/local/bin/kubectl config set-credentials system:node:{{ansible_hostname}} --client-certificate=/etc/kubernetes/pki/{{ansible_hostname}}.crt --client-key=/etc/kubernetes/pki/{{ansible_hostname}}.key --embed-certs=true --kubeconfig=/etc/kubernetes/kubelet.conf"
+  ansible.builtin.shell: "/usr/local/bin/kubectl config set-credentials system:node:{{ansible_facts.hostname}} --client-certificate=/etc/kubernetes/pki/{{ansible_facts.hostname}}.crt --client-key=/etc/kubernetes/pki/{{ansible_facts.hostname}}.key --embed-certs=true --kubeconfig=/etc/kubernetes/kubelet.conf"
   when: "'worker' in group_names"
 
 - name: Generate Kubeconfigs (2/4)
@@ -116,7 +116,7 @@
   when: cni != 'cilium'
 
 - name: Generate Kubeconfigs (3/4)
-  ansible.builtin.shell: "/usr/local/bin/kubectl config set-context default --cluster=kubernetes --user=system:node:{{ansible_hostname}} --kubeconfig=/etc/kubernetes/kubelet.conf"
+  ansible.builtin.shell: "/usr/local/bin/kubectl config set-context default --cluster=kubernetes --user=system:node:{{ansible_facts.hostname}} --kubeconfig=/etc/kubernetes/kubelet.conf"
   when: "'worker' in group_names"
 
 - name: Generate Kubeconfigs (3/4)

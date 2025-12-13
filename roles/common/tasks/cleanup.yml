@@ -1,5 +1,5 @@
 - set_fact:
-    arch: "{{ architecture[ansible_architecture|lower] }}"
+    arch: "{{ architecture[ansible_facts.architecture|lower] }}"
 
 - name: Delete temporary files
   ansible.builtin.file:
@@ -10,5 +10,5 @@
   - /tmp/etcd-flannel.csr
   - /tmp/etcd-ca.key
   - /etc/kubernetes/pki/etcd-ca.srl
-  - "/tmp/cni-plugins-{{ansible_system | lower}}-{{ arch }}-v{{cni_version}}.tgz"
+  - "/tmp/cni-plugins-{{ansible_facts.system | lower}}-{{ arch }}-v{{cni_version}}.tgz"
   ignore_errors: true
