@@ -1,15 +1,76 @@
+- set_fact:
+    arch: "{{ architecture[ansible_facts.architecture|lower] }}"
+
 - name: add cilium repo
   shell: "helm repo add cilium https://helm.cilium.io/ && helm repo update"
 
 - set_fact:
     cp_endpoint: "{% if hostvars[groups['control_plane'][0]]['loadbalancer_int_ip'] is defined %}{{hostvars[groups['control_plane'][0]]['loadbalancer_int_ip']}}{% else %}{{hostvars[groups['control_plane'][0]]['internal_ip']}}{% endif %}"
 
-- name: Copy helmfile
+- name: Copy helm overide
   ansible.builtin.template:
     src: "cilium-values.yaml.j2"
-    dest: "/tmp/cilium-values.yaml.j2"
+    dest: "/tmp/cilium-values.yaml"
+
+- name: Copy ETCD CA certificate
+  ansible.builtin.copy:
+    src: "/{{tmp_folder}}/{{item.name}}"
+    dest: "{{item.path}}"
+    owner: root
+    group: root
+    mode: '0600'
+  loop:
+    - {name: etcd-ca.crt, path: /tmp/etcd-ca.crt}
+    - {name: etcd-ca.key, path: /tmp/etcd-ca.key}
+
+- name: Create etcd key for cilium
+  ansible.builtin.shell: |
+    openssl genrsa -out etcd-cilium.key 2048
+    chmod 600 etcd-cilium.key
+  args:
+    chdir: /tmp
+    creates: /tmp/etcd-cilium.key
+
+- name: Create etcd-cilium CSR config
+  ansible.builtin.template:
+    src: etcd.conf.j2
+    dest: /tmp/etcd-cilium.conf
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: Create etcd-cilium CSR
+  ansible.builtin.shell: "openssl req -new -key /tmp/etcd-cilium.key -out etcd-cilium.csr -config etcd-cilium.conf -section etcd-cilium"
+  args:
+    chdir: /tmp
+
+- name: Create etcd-cilium certificate
+  ansible.builtin.shell: |
+    openssl x509 -req -in etcd-cilium.csr -CA /tmp/etcd-ca.crt -CAkey /tmp/etcd-ca.key -out /tmp/etcd-cilium.crt -copy_extensions copyall -sha256 -CAcreateserial -days 365
+    chmod 600 /tmp/etcd-cilium.crt
+  args:
+    chdir: /tmp
+
+- name: Create etcd cert
+  shell: |
+    kubectl create secret generic -n kube-system cilium-etcd-secrets \
+    --from-file=etcd-client-ca.crt=/tmp/etcd-ca.crt \
+    --from-file=etcd-client.key=/tmp/etcd-cilium.key \
+    --from-file=etcd-client.crt=/tmp/etcd-cilium.crt
+
+- name: Install cilium cli
+  shell: |
+    CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
+    CLI_ARCH={{ arch }}
+    if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
+    curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+    sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
+    sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
+    rm cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+
+    cilium encrypt create-key --auth-algo rfc4106-gcm-aes
 
 - name: Install cilium
-  shell: "helm upgrade --install cilium cilium/cilium --namespace kube-system -f /tmp/cilium-values.yaml.j2"
+  shell: "helm upgrade --install cilium cilium/cilium --namespace kube-system -f /tmp/cilium-values.yaml"
 
-
+- include_tasks: cleanup.yml

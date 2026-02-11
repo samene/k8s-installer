@@ -1,0 +1,17 @@
+- set_fact:
+    arch: "{{ architecture[ansible_facts.architecture|lower] }}"
+
+- name: Delete temporary files
+  ansible.builtin.file:
+    path: "{{item}}"
+    state: absent
+  loop:
+  - /tmp/etcd-ca.crt
+  - /tmp/etcd-cilium.key
+  - /tmp/etcd-cilium.crt
+  - /tmp/etcd-cilium.csr
+  - /tmp/etcd-ca.key
+  - /tmp/cilium-values.yaml
+  - /tmp/etcd-cilium.conf
+  - /tmp/etcd-ca.srl
+  ignore_errors: true

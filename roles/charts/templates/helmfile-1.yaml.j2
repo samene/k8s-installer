@@ -42,6 +42,12 @@ releases:
   set:
   - name: crds.enabled
     value: true
+  - name: config.apiVersion
+    value: controller.config.cert-manager.io/v1alpha1
+  - name: config.kind
+    value: ControllerConfiguration
+  - name: config.enableGatewayAPI
+    value: true
   condition: cert-manager.enabled
 - name: prometheus
   namespace: prometheus
@@ -69,8 +75,8 @@ releases:
   - name: snapshotterReplicaCount
     value: 1
   - name: defaultSettings.defaultReplicaCount
-    value: '{"v1":"1","v2":"1"}'
+    value: '{"v1":"2","v2":"2"}'
   - name: persistence.defaultClassReplicaCount
-    value: 1
+    value: 2
   condition: longhorn.enabled
 

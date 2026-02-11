@@ -1,0 +1,16 @@
+[etcd-cilium]
+distinguished_name = etcd-cilium_distinguished_name
+prompt             = no
+req_extensions     = default_req_extensions
+
+[etcd-cilium_distinguished_name]
+CN = etcd-cilium
+
+[default_req_extensions]
+basicConstraints     = CA:FALSE
+extendedKeyUsage     = clientAuth
+keyUsage             = critical, digitalSignature, keyEncipherment
+nsCertType           = client
+nsComment            = "Etcd Client Certificate"
+subjectKeyIdentifier = hash
+

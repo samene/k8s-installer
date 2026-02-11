@@ -1,4 +1,6 @@
 kubeProxyReplacement: true
+socketLB:
+  hostNamespaceOnly: true
 k8sServiceHost: {{cp_endpoint}}
 k8sServicePort: 6443
 cni:
@@ -7,3 +9,24 @@ ipam:
   operator:
     clusterPoolIPv4PodCIDRList:
       - 10.244.0.0/16
+tunnelProtocol: geneve
+etcd:
+  enabled: true
+  ssl: true
+  endpoints:
+  {% for host in groups['etcd'] %}
+  - "https://{{hostvars[host]['ip_address']}}:2379"
+  {% endfor %}
+identityAllocationMode: kvstore
+gatewayAPI:
+  enabled: true
+  hostNetwork:
+    enabled: true
+hubble:
+  relay:
+    enabled: true
+encryption:
+  enabled: true
+  type: ipsec
+pv4NativeRoutingCIDR: CIDR
+
