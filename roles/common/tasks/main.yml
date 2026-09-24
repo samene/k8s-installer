@@ -12,6 +12,17 @@
 
 - include_tasks: certificate_authority.yml
 
+- name: Check if firewalld is installed
+  ansible.builtin.service_facts:
+
+- name: Stop and disable firewalld
+  ansible.builtin.systemd:
+    name: firewalld
+    state: stopped
+    enabled: false
+    masked: true
+  when: "'firewalld.service' in ansible_facts.services"
+
 - name: Update apt cache
   ansible.builtin.apt:
     update_cache: yes
