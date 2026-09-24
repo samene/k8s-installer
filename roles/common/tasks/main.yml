@@ -13,27 +13,27 @@
 - include_tasks: certificate_authority.yml
 
 - name: Update apt cache
-  apt:
+  ansible.builtin.apt:
     update_cache: yes
   when: ansible_facts['os_family'] == 'Debian'
 
 - name: Install Base packages
-  package:
+  ansible.builtin.package:
     name: ['unzip','conntrack','curl','tar','git','iptables']
   when: ansible_facts['os_family'] != 'Suse'
 
 - name: Install Base packages
-  package:
+  ansible.builtin.package:
     name: ['unzip','conntrack-tools','curl','tar','git','iptables']
   when: ansible_facts['os_family'] == 'Suse'
 
 - block:
   - name: Install pre-requisite packages
-    yum:
+    ansible.builtin.dnf:
       name: ['ca-certificates','iscsi-initiator-utils','gpg','jq','nfs-utils']
       update_cache: yes
   - name: Enable iscsid
-    systemd:
+    ansible.builtin.systemd_service:
       name: iscsid
       state: started
       enabled: yes
@@ -41,11 +41,11 @@
 
 - block:
   - name: Install pre-requisite packages
-    yum:
+    community.general.zypper:
       name: ['ca-certificates','jq','open-iscsi']
       update_cache: yes
   - name: Enable iscsid
-    systemd:
+    ansible.builtin.systemd_service:
       name: iscsid
       state: started
       enabled: yes
