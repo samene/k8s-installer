@@ -20,6 +20,12 @@
 - name: Install Base packages
   package:
     name: ['unzip','conntrack','curl','tar','git','iptables']
+  when: ansible_facts['os_family'] != 'Suse'
+
+- name: Install Base packages
+  package:
+    name: ['unzip','conntrack-tools','curl','tar','git','iptables']
+  when: ansible_facts['os_family'] == 'Suse'
 
 - block:
   - name: Install pre-requisite packages
