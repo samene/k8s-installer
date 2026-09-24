@@ -23,7 +23,7 @@
 - block:
   - name: Download flannel
     ansible.builtin.get_url:
-      url: "{{ flannel_download_url }}/v{{ flannel_version }}/cni-plugin-flannel-{{ansible_facts.system | lower}}-{{ arch }}-v{{ flannel_version }}.tgz"
+      url: "{{ flannel_download_url }}/v{{ flannel_version }}-flannel1/cni-plugin-flannel-{{ansible_facts.system | lower}}-{{ arch }}-v{{ flannel_version }}.tgz"
       dest: "/tmp"
       force: false
       mode: '0755'

@@ -193,7 +193,7 @@
     /usr/local/bin/helm repo add coredns https://coredns.github.io/helm
     /usr/local/bin/helm repo update
     /usr/local/bin/helm --namespace=kube-system upgrade --install coredns --version {{coredns_version}} --set service.clusterIP=10.96.0.10 coredns/coredns
-    /usr/local/bin/kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
+    /usr/local/bin/kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml
   run_once: true
 
 - include_tasks: cleanup.yml
