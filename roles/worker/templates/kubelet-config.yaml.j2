@@ -31,3 +31,12 @@ cgroupDriver: systemd
 {% if resolvd.stat.exists %}
 resolvConf: /run/systemd/resolve/resolv.conf
 {% endif %}
+failSwapOn: false
+memorySwap:
+  swapBehavior: LimitedSwap
+reservedSystemCPUs: "0"
+cpuManagerPolicy: static
+cpuManagerPolicyOptions:
+  strict-cpu-reservation: "true"
+serializeImagePulls: false
+maxParallelImagePulls: 4
