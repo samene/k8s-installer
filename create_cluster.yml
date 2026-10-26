@@ -2,12 +2,13 @@
 - name: Wait for availability of nodes
   hosts: all
   gather_facts: no
+  any_errors_fatal: true
   tasks:
   - name: Wait for SSH to be available
     wait_for:
       port: 22
       host: "{{ ansible_host }}"
-      delay: 1
+      delay: 10
       timeout: 120
       state: started
 
@@ -16,6 +17,10 @@
   become: true
   tags:
     - always
+  tasks:
+    - setup:
+    - set_fact:
+        ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_facts.default_ipv4.address}}{% endif %}"
 
 - name: common
   hosts: all

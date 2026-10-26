@@ -7,6 +7,7 @@
   - overlay
   - br_netfilter
   - iscsi_tcp
+  - rbd
 - name: Install kernel modules
   community.general.modprobe:
     name: "{{item}}"
@@ -37,6 +38,7 @@
       net.bridge.bridge-nf-call-iptables = 1
       kernel.pid_max = 4194303
       fs.inotify.max_user_instances = 8192
+      fs.inotify.max_user_watches = 65536
       fs.file-max = 1024000
       net.ipv4.ip_local_port_range = 11000 65535
       net.ipv4.tcp_max_tw_buckets = 2000000
@@ -48,11 +50,3 @@
 - name: Reload sysctl
   ansible.builtin.command: sysctl --system
   changed_when: false
-- name: Disable swap (1/2)
-  shell: |
-    swapoff -a
-- name: Disable swap (2/2)
-  replace:
-    path: /etc/fstab
-    regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
-    replace: '# \1'

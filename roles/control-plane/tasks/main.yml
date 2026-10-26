@@ -10,6 +10,7 @@
     group: root
   loop:
     - "{{ ansible_facts.env.HOME }}/.kube"
+    - "/var/log/kubernetes/audit"
 
 - name: Download binaries
   ansible.builtin.get_url:
@@ -126,6 +127,12 @@
     - controller-manager
     - scheduler
     - admin
+
+- name: Copy audit policy
+  ansible.builtin.copy:
+    src: ./files/audit-policy.yaml
+    dest: /etc/kubernetes/audit-policy.yaml
+    mode: 0644
 
 - name: Move admin kubeconfig
   ansible.builtin.copy:

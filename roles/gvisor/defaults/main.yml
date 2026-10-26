@@ -1,2 +1,2 @@
 runsc_download_url: https://storage.googleapis.com/gvisor/releases/release
-runsc_version: 20250611
+runsc_version: 20261019.0

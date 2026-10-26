@@ -1,14 +1,17 @@
 - name: Download runsc
   ansible.builtin.get_url:
-    url: "{{ runsc_download_url }}/{{runsc_version}}/{{ansible_facts.architecture|lower}}/runsc"
-    dest: "/usr/local/bin/runsc"
+    url: "{{ runsc_download_url }}/{{runsc_version}}/{{ansible_facts.architecture|lower}}/gvisor.tar.zstd"
+    dest: "/tmp/gvisor.tar.zstd"
     force: false
     mode: '0755'
 
-- name: Download containerd-shim-runsc-v1
-  ansible.builtin.get_url:
-    url: "{{ runsc_download_url }}/{{runsc_version}}/{{ansible_facts.architecture|lower}}/containerd-shim-runsc-v1"
-    dest: "/usr/local/bin/containerd-shim-runsc-v1"
-    force: false
-    mode: '0755'
+- name: Untar and install
+  ansible.builtin.command:
+    cmd: "tar --zstd -xf gvisor.tar.zstd -C /usr/local/bin"
+  args:
+    chdir: /tmp
 
+- name: Remove gVisor archive
+  ansible.builtin.file:
+    path: /tmp/gvisor.tar.zstd
+    state: absent
