@@ -17,6 +17,9 @@
    - kubelet
    - kubectl
 
+- set_fact:
+    ip_address: "{% if internal_ip is defined and internal_ip != '' %}{{internal_ip}}{% else %}{{ansible_facts.default_ipv4.address}}{% endif %}"
+
 - name: Copy CA certificates
   ansible.builtin.copy:
     src: "/{{tmp_folder}}/{{item.name}}"

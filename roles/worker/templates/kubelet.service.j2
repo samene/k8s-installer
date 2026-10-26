@@ -9,6 +9,7 @@ EnvironmentFile=/etc/k8s.env
 ExecStart=/usr/local/bin/kubelet \
   --config=/etc/kubernetes/kubelet-config.yaml \
   --hostname-override={{ansible_facts.hostname|lower}} \
+  --node-ip={{ip_address}} \
   --kubeconfig=/etc/kubernetes/kubelet.conf \
   --v=2
 Restart=always
