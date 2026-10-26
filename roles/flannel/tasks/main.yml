@@ -100,12 +100,30 @@
 - block:
 
   - name: Get connection UUID
-    shell: nmcli -t -f UUID con show --active | head -n 1
+    ansible.builtin.shell: nmcli -t -f UUID con show --active | head -n 1
     register: uuid
+    changed_when: false
+
+  - name: Get existing DNS servers
+    ansible.builtin.shell: "nmcli -g ipv4.dns con show {{ uuid.stdout }}"
+    register: existing_dns
+    changed_when: false
+
   - name: Configure DNS entry
-    shell: "nmcli con mod {{ uuid.stdout }} ipv4.dns \"10.96.0.10 8.8.8.8\""
+    ansible.builtin.shell: "nmcli con mod {{ uuid.stdout }} ipv4.dns \"{{ (['10.96.0.10'] + (existing_dns.stdout.split() | reject('equalto', '10.96.0.10') | list)) | join(' ') }}\""
+
+  - name: Get existing DNS search domains
+    ansible.builtin.shell: "nmcli -g ipv4.dns-search con show {{ uuid.stdout }}"
+    register: existing_domains
+    changed_when: false
+
+  - name: Configure DNS search domain
+    ansible.builtin.shell: "nmcli con mod {{ uuid.stdout }} ipv4.dns-search \"{{ (existing_domains.stdout.split(',') + ['cluster.local']) | unique | join(',') }}\""
+
   - name: Restart NetworkManager
-    shell: service NetworkManager restart
+    ansible.builtin.service:
+      name: NetworkManager
+      state: restarted
 
   when: "'control_plane' in group_names and (ansible_facts.os_family == 'Suse' or ansible_facts.os_family == 'RedHat')"
 
