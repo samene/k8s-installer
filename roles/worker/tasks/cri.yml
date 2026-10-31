@@ -67,6 +67,14 @@
     dest: "/etc/containerd/certs.d/{{item.endpoint}}/hosts.toml"
   loop: "{{private_registries|default([])}}"
 
+- name: Configure runsc runtime
+  ansible.builtin.blockinfile:
+    path: /etc/containerd/config.toml
+    insertafter: ".*containerd.runtimes]"
+    marker: "        # {mark} RUNSC ANSIBLE MANAGED BLOCK"
+    block: "{{ lookup('template', 'runsc.j2') }}"
+  when: security_hardening | default(false)
+
 - name: restart containerd
   shell: systemctl restart containerd
 

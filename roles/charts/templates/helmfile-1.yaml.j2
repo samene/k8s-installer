@@ -72,11 +72,19 @@ releases:
     value: 1
   - name: csi.resizerReplicaCount
     value: 1
-  - name: snapshotterReplicaCount
+  - name: csi.snapshotterReplicaCount
+    value: 1
+  - name: longhornGlobalManager.replicas
     value: 1
   - name: defaultSettings.defaultReplicaCount
-    value: '{"v1":"2","v2":"2"}'
+    value: '{"v1":"1","v2":"1"}'
   - name: persistence.defaultClassReplicaCount
-    value: 2
+    value: 1
+  - name: defaultSettings.defaultDataPath
+    value: /data
+  - name: defaultSettings.storageMinimalAvailablePercentage
+    value: 5
+  - name: longhornGlobalManager.replicas
+    value: 1
   condition: longhorn.enabled
 
