@@ -41,7 +41,7 @@
 - block:
   - name: Install pre-requisite packages
     ansible.builtin.dnf:
-      name: ['ca-certificates','iscsi-initiator-utils','gpg','jq','nfs-utils']
+      name: ['ca-certificates','iscsi-initiator-utils','gpg','jq','nfs-utils','zstd']
       update_cache: yes
   - name: Enable iscsid
     ansible.builtin.systemd_service:

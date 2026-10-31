@@ -111,7 +111,7 @@
       when: cni == "canal"
 
 - name: install-gvisor
-  hosts: all
+  hosts: control_plane[0],worker
   any_errors_fatal: true
   become: true
   tags:
